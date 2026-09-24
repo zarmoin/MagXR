@@ -6,25 +6,32 @@ import sounddevice as sd
 from scipy.io.wavfile import write
 from scipy.signal import resample_poly
 
-def get_linux_input_device():
-    """Identifies the best input device under Linux (PulseAudio/PipeWire/ALSA)."""
+def get_input_device():
+    """Identifies the best input device (Oculus Virtual Audio Device / Quest Link, PulseAudio, PipeWire, ALSA, or OS default)."""
     devices = sd.query_devices()
     
-    # Priority 1: Check standard sound server entries
+    # Priority 1: Quest Link / Oculus Virtual Audio Device (Meta Quest 3)
+    for idx, dev in enumerate(devices):
+        name = dev.get('name', '').lower()
+        if dev.get('max_input_channels', 0) > 0:
+            if any(k in name for k in ['oculus', 'quest', 'virtual audio']):
+                return idx, dev
+
+    # Priority 2: Standard sound server entries (PulseAudio / PipeWire)
     for idx, dev in enumerate(devices):
         name = dev.get('name', '').lower()
         if dev.get('max_input_channels', 0) > 0:
             if any(k in name for k in ['pulse', 'pipewire', 'default']):
                 return idx, dev
                 
-    # Priority 2: Standard default input device
+    # Priority 3: System default input device
     default_idx = sd.default.device[0]
     if default_idx is not None and default_idx >= 0:
         dev = sd.query_devices(default_idx, 'input')
         if dev.get('max_input_channels', 0) > 0:
             return default_idx, dev
 
-    # Priority 3: First available hardware device with inputs
+    # Priority 4: First available hardware device with inputs
     for idx, dev in enumerate(devices):
         if dev.get('max_input_channels', 0) > 0:
             return idx, dev
@@ -32,11 +39,18 @@ def get_linux_input_device():
     return None, None
 
 
+# Alias for backward compatibility
+get_linux_input_device = get_input_device
+
+
 def check_microphone_input(check_duration: float = 2.5, threshold: float = 0.01) -> bool:
-    """Action Item 2: Pre-check microphone volume using native Linux device parameters."""
-    dev_idx, dev_info = get_linux_input_device()
+    """
+    Action Item 2: Pre-check microphone RMS volume and peak levels prior to recording
+    to confirm that audio is actively streaming from the headset microphone.
+    """
+    dev_idx, dev_info = get_input_device()
     if dev_idx is None:
-        print("[ERROR] No input audio devices detected by ALSA/PortAudio.")
+        print("[ERROR] No input audio devices detected.")
         return False
 
     native_rate = int(dev_info.get('default_samplerate', 44100))
@@ -48,6 +62,7 @@ def check_microphone_input(check_duration: float = 2.5, threshold: float = 0.01)
 
     block_samples = int(native_rate * 0.1)
     max_peak = 0.0
+    max_rms = 0.0
     start_time = time.time()
 
     try:
@@ -55,21 +70,25 @@ def check_microphone_input(check_duration: float = 2.5, threshold: float = 0.01)
             while time.time() - start_time < check_duration:
                 data, _ = stream.read(block_samples)
                 peak = float(np.max(np.abs(data)))
+                rms = float(np.sqrt(np.mean(data ** 2)))
                 if peak > max_peak:
                     max_peak = peak
+                if rms > max_rms:
+                    max_rms = rms
                 
-                bars = int(peak * 40)
-                print(f"\rLevel: [{'#' * min(bars, 40):<40}] Peak: {peak:.3f}", end="", flush=True)
+                bars = int(peak * 30)
+                rms_db = 20 * math.log10(rms + 1e-7)
+                print(f"\rLevel: [{'#' * min(bars, 30):<30}] Peak: {peak:.3f} | RMS: {rms:.3f} ({rms_db:.1f} dB)", end="", flush=True)
     except Exception as e:
         print(f"\n[ERROR] InputStream access failed: {e}")
         return False
 
     print("\n")
-    if max_peak < threshold:
-        print("[WARNING] Low or no audio detected. Run 'alsamixer' in terminal to ensure mic capture volume is unmuted.")
+    if max_peak < threshold and max_rms < (threshold / 2):
+        print(f"[WARNING] Low audio detected (Max Peak: {max_peak:.3f}, Max RMS: {max_rms:.3f}). Verify microphone capture volume is unmuted.")
         return False
 
-    print(f"[SUCCESS] Audio input detected successfully (Max Peak: {max_peak:.3f}).")
+    print(f"[SUCCESS] Audio input detected successfully (Max Peak: {max_peak:.3f}, Max RMS: {max_rms:.3f}).")
     return True
 
 
