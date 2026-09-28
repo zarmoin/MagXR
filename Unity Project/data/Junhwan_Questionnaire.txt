@@ -1,0 +1,25 @@
+Junhwan Questionnaire Results:
+
+Pre Training:
+From 1-5, how tired are your eyes? 1 being not tired at all, and 5 being extremely tired: 3
+From 1 to 5, how blurry are your eyes? 1 being not blurry at all and 5 being extremely blurry: 2
+From 1 to 5, how tired and sore are your neck and back? 1 being not tired or sore at all and 5 being extremely tired and sore: 3
+From 1 to 5, how do your eyes feel (strain on your eyes)? 1 being not strained at all and 5 being extremely strained: 2
+From 1 to 5, how does your head feel (headache)? 1 being no headache at all and 5 being a very bad headache: 2
+
+
+Post Matching Tasks:
+From 1-5, how tired are your eyes? 1 being not tired at all, and 5 being extremely tired: 2
+From 1 to 5, how blurry are your eyes? 1 being not blurry at all and 5 being extremely blurry: 2
+From 1 to 5, how tired and sore are your neck and back? 1 being not tired or sore at all and 5 being extremely tired and sore: 3
+From 1 to 5, how do your eyes feel (strain on your eyes)? 1 being not strained at all and 5 being extremely strained: 2
+From 1 to 5, how does your head feel (headache)? 1 being no headache at all and 5 being a very bad headache: 3
+
+
+
+Post Blind Reaching Tasks:
+From 1-5, how tired are your eyes? 1 being not tired at all, and 5 being extremely tired: 2
+From 1 to 5, how blurry are your eyes? 1 being not blurry at all and 5 being extremely blurry: 2
+From 1 to 5, how tired and sore are your neck and back? 1 being not tired or sore at all and 5 being extremely tired and sore: 3
+From 1 to 5, how do your eyes feel (strain on your eyes)? 1 being not strained at all and 5 being extremely strained: 2
+From 1 to 5, how does your head feel (headache)? 1 being no headache at all and 5 being a very bad headache: 3

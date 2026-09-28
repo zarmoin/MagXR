@@ -11,3 +11,64 @@ dist/
 build/
 *.egg-info/
 .pdf/
+
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+
+# Large or sensitive generated files
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# Asset Store & local package cache
+[Aa]ssets/AssetStoreTools*
+[Aa]ssets/Plugins/Editor/JetBrains*
+
+# IDE/editor state
+.vs/
+.idea/
+.vscode/
+.consolu/
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity crash reports
+sysinfo.txt
+*.stackdump
+crashlytics-build.properties
+
+# Builds & packages
+*.apk
+*.aab
+*.unitypackage
+*.unitypackage.meta
+*.app
+
+# Addressables & Gradle
+/ServerData
+[Aa]ssets/StreamingAssets/aa*
+[Aa]ssets/AddressableAssetsData/link.xml*
+[Aa]ssets/Addressables_Temp*
+[Aa]ssets/AddressableAssetsData/*/*.bin*
+.gradle/
+
+# Visual Scripting & other auto‑generated
+[Aa]ssets/Unity.VisualScripting.Generated/...
+[Aa]ssets/InitTestScene*.unity*
+/UIElementsSchema/
+[Aa]ssets/SceneDependencyCache*
