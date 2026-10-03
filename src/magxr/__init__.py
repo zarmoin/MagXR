@@ -14,6 +14,7 @@ from src.magxr.agent import (
     reset_magnification,
     CUSTOM_TOOLS,
 )
+from src.magxr.server import MagXRWebSocketServer
 
 __all__ = [
     # Step 3
@@ -30,6 +31,8 @@ __all__ = [
     "create_checkpoint",
     "reset_magnification",
     "CUSTOM_TOOLS",
+    # Step 5
+    "MagXRWebSocketServer",
 ]
 
 def main() -> None:
