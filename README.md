@@ -1,1 +1,4 @@
 Overleaf Link: https://www.overleaf.com/project/6aa2e15975dd695feef9026c
+
+Status Video link: here is the video link though: https://colostate-my.sharepoint.com/:v:/g/personal/c838423419_colostate_edu/IQC21t4iEfQTQoQKvXeVIc-_AdkZZ_2nvlrFzF_ZHgdLJ0w?nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJPbmVEcml2ZUZvckJ1c2luZXNzIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXciLCJyZWZlcnJhbFZpZXciOiJNeUZpbGVzTGlua0NvcHkifX0&e=gbOXOW
+
