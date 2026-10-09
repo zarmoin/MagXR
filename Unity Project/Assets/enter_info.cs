@@ -18,8 +18,8 @@ public class enter_info : MonoBehaviour
     private bool pulled = false;
 
     private string[] file_data;
-    public float zoom_level;
-    public int zoom_mode;
+    public float zoom_level = 1;
+    public int zoom_mode = 1;
     public float distance;
     private int row = 0;
 
