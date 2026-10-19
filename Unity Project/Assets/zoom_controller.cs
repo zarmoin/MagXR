@@ -48,6 +48,19 @@ public class zoom_controller : MonoBehaviour
 
     public float current_shift = 0f;
 
+    public bool isViewing2DMap = true;
+
+    public GameObject cameraOffset;
+    public GameObject image;
+    public LayerMask imageLayer = 1;
+    public float centerShift2_5 = 11.4f;
+    public float cornerShift2_5 = 20.0f;
+    public float centerShift4 = 22.8f;
+    public float cornerShift4 = 30.0f;
+
+    private float currentCenterShift;
+    private float currentCornerShift;
+    private float maxDistanceToCorner;
 
     /*
      * 1 - Perfect zoom
@@ -62,6 +75,15 @@ public class zoom_controller : MonoBehaviour
 
     [SerializeField]
     private float zoomSpeed = 1f;
+
+
+
+
+
+    private void Start()
+    {
+        InitializeBounds();
+    }
 
     // Update is called once per frame
     void Update()
@@ -227,6 +249,54 @@ public class zoom_controller : MonoBehaviour
             reset_eye_pos();
         }
 
+        if (GameObject.Find("Menu").GetComponent<enter_info>().zoom_level == 2.5f)
+        {
+            currentCenterShift = centerShift2_5;
+            currentCornerShift = cornerShift2_5;
+        }
+        else if (GameObject.Find("Menu").GetComponent<enter_info>().zoom_level == 4f)
+        {
+            currentCenterShift = centerShift4;
+            currentCornerShift = cornerShift4;
+        }
+
+        Ray ray = new Ray(cameraOffset.transform.position, cameraOffset.transform.forward);
+        RaycastHit hit;
+        if (GameObject.Find("Map Image").GetComponent<image_movement>().magnification_method == 0f)
+        {
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity, imageLayer))
+            {
+                if (hit.collider.gameObject == image)
+                {
+                    Vector3 imageCenter = image.transform.position;
+                    float distanceFromCenter = Vector3.Distance(hit.point, imageCenter);
+                    float t = Mathf.Clamp01(distanceFromCenter / maxDistanceToCorner);
+                    float activeShift = Mathf.Lerp(currentCenterShift, currentCornerShift, t);
+
+                    if (GameObject.Find("Menu").GetComponent<enter_info>().zoom_level == 2.5f)
+                    {
+                        Xoptical_2_5_40 = activeShift;
+                    }
+                    else if (GameObject.Find("Menu").GetComponent<enter_info>().zoom_level == 4f)
+                    {
+                        Xoptical_4_40 = activeShift;
+                    }
+                    reset_eye_pos();
+                }
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
 
     }
 
@@ -283,7 +353,6 @@ public class zoom_controller : MonoBehaviour
         right_cam.transform.localPosition = new Vector3(right_shift, 0f, 0f);
         left_cam.transform.localPosition = new Vector3(left_shift, 0f, 0f);
     }
-
     void reset_eye_pos()
     {
         ipd_m = (ipd_cm - 60f) / 100f;
@@ -333,7 +402,7 @@ public class zoom_controller : MonoBehaviour
         left_cam.GetComponent<ZoomController>().shift_i = shift_2;
         right_cam.GetComponent<ZoomController>().shift_i = shift_2;
     }
-    
+
     void set_perfect(float zoom_l)
     {
         XRDevice.fovZoomFactor = 1f;
@@ -355,5 +424,24 @@ public class zoom_controller : MonoBehaviour
     {
         //var feature = ZoomRendererFeature1.Instance;
         //feature.m_ZoomLevel = zoom_l;
+    }
+
+
+
+    private void InitializeBounds() //This just calculates the image size to get the center-to-corner distance, so the shift value can interpolate between the two
+    {
+        if (image == null) return;
+
+        Renderer imgRenderer = image.GetComponent<Renderer>();
+        if (imgRenderer != null)
+        {
+            Vector3 centerToCorner = imgRenderer.bounds.max - imgRenderer.bounds.center;
+            maxDistanceToCorner = centerToCorner.magnitude;
+        }
+        else
+        {
+            maxDistanceToCorner = 0.707f;
+            Debug.LogWarning("No Renderer found on image. Using fallback corner distance.");
+        }
     }
 }
