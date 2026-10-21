@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028352, g: 0.22571376, b: 0.30692244, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -463,6 +463,7 @@ GameObject:
   - component: {fileID: 396612796}
   - component: {fileID: 396612795}
   - component: {fileID: 396612797}
+  - component: {fileID: 396612798}
   m_Layer: 0
   m_Name: Main Camera Right
   m_TagString: MainCamera
@@ -560,6 +561,19 @@ MonoBehaviour:
   right_eye: 1
   shift_i: 0
   pivotY: 0.5
+--- !u!114 &396612798
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 396612792}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3eb4afa5b861404d8e08d579ee7acc2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  magnificationMaterial: {fileID: 2100000, guid: bd076b65ed8e2184f99329fe83ca391f, type: 2}
 --- !u!1 &505324901
 GameObject:
   m_ObjectHideFlags: 0
@@ -2399,6 +2413,7 @@ GameObject:
   - component: {fileID: 1179192530}
   - component: {fileID: 1179192529}
   - component: {fileID: 1179192532}
+  - component: {fileID: 1179192533}
   m_Layer: 0
   m_Name: Main Camera Left
   m_TagString: MainCamera
@@ -2514,6 +2529,19 @@ MonoBehaviour:
   right_eye: 0
   shift_i: 0
   pivotY: 0.5
+--- !u!114 &1179192533
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1179192527}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3eb4afa5b861404d8e08d579ee7acc2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  magnificationMaterial: {fileID: 2100000, guid: bd076b65ed8e2184f99329fe83ca391f, type: 2}
 --- !u!1 &1186713475
 GameObject:
   m_ObjectHideFlags: 0
@@ -3382,9 +3410,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   move_speed: 1
-  mapMaterial: {fileID: 2100000, guid: 9e9b107538917ff40a2e1f342c357d4f, type: 2}
+  mapMaterial: {fileID: 2100000, guid: a842c01d26c42cf4982d1f1f8c347462, type: 2}
   mapQuadTransform: {fileID: 1614829933}
   magnification_method: 0
+  cameraMagnifierScripts:
+  - {fileID: 1179192533}
+  - {fileID: 396612798}
 --- !u!1 &1633069905
 GameObject:
   m_ObjectHideFlags: 0

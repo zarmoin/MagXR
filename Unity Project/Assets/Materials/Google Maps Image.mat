@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Google Maps Image
-  m_Shader: {fileID: 4800000, guid: 0f063ae1c71b0d346aa34f0f88f0d5ab, type: 3}
+  m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}
   m_Parent: {fileID: 2100000, guid: a842c01d26c42cf4982d1f1f8c347462, type: 2}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -27,6 +27,6 @@ Material:
     m_Floats:
     - _InwardShift: 0.155
     - _LensRadius: 0
-    - _ZoomFactor: 1
+    - _ZoomFactor: 0
     m_Colors: []
   m_BuildTextureStacks: []
