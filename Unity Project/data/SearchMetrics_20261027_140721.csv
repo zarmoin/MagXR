@@ -1,0 +1,24 @@
+--- CHRONOLOGICAL SELECTION TIMELINE ---
+Click Index,Cube Identifier Name,Material Name
+1,TestCube (4),Yellow
+2,TestCube (7),Green
+3,TestCube (9),Yellow
+4,TestCube (9),Yellow
+5,TestCube (4),Yellow
+6,TestCube (4),Yellow
+7,TestCube,Red
+8,TestCube (2),Blue
+9,TestCube (10),Blue
+10,TestCube (3),Yellow
+11,TestCube (5),Green
+
+--- AGGREGATE REPEAT METRICS ---
+Cube Identifier Name,Total Selection Occurrences,Repeat Counts
+TestCube (4),3,2
+TestCube (7),1,0
+TestCube (9),2,1
+TestCube,1,0
+TestCube (2),1,0
+TestCube (10),1,0
+TestCube (3),1,0
+TestCube (5),1,0

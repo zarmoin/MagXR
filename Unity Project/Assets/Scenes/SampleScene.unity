@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.18028352, g: 0.22571376, b: 0.30692244, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -308,7 +308,7 @@ GameObject:
   - component: {fileID: 256862216}
   - component: {fileID: 256862215}
   - component: {fileID: 256862214}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: TestCube (5)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -349,7 +349,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 10, y: 10, z: 10}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &256862215
 MeshRenderer:
@@ -586,7 +586,7 @@ GameObject:
   - component: {fileID: 505324905}
   - component: {fileID: 505324904}
   - component: {fileID: 505324903}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: TestCube (9)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -627,7 +627,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 10, y: 10, z: 10}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &505324904
 MeshRenderer:
@@ -737,7 +737,7 @@ GameObject:
   - component: {fileID: 639576587}
   - component: {fileID: 639576586}
   - component: {fileID: 639576585}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: TestCube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -778,7 +778,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 10, y: 10, z: 10}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &639576586
 MeshRenderer:
@@ -936,7 +936,7 @@ GameObject:
   - component: {fileID: 743557949}
   - component: {fileID: 743557948}
   - component: {fileID: 743557947}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: TestCube (10)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -977,7 +977,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 10, y: 10, z: 10}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &743557948
 MeshRenderer:
@@ -1049,7 +1049,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &857100037
 Transform:
   m_ObjectHideFlags: 0
@@ -1727,7 +1727,7 @@ GameObject:
   - component: {fileID: 1004750025}
   - component: {fileID: 1004750024}
   - component: {fileID: 1004750023}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: TestCube (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1768,7 +1768,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 10, y: 10, z: 10}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1004750024
 MeshRenderer:
@@ -2554,7 +2554,7 @@ GameObject:
   - component: {fileID: 1186713479}
   - component: {fileID: 1186713478}
   - component: {fileID: 1186713477}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: TestCube (7)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2595,7 +2595,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 10, y: 10, z: 10}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1186713478
 MeshRenderer:
@@ -2659,7 +2659,7 @@ GameObject:
   - component: {fileID: 1227098444}
   - component: {fileID: 1227098443}
   - component: {fileID: 1227098442}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: TestCube (4)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2700,7 +2700,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 10, y: 10, z: 10}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1227098443
 MeshRenderer:
@@ -2795,7 +2795,7 @@ GameObject:
   - component: {fileID: 1335362809}
   - component: {fileID: 1335362808}
   - component: {fileID: 1335362807}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: TestCube (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2836,7 +2836,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 10, y: 10, z: 10}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1335362808
 MeshRenderer:
@@ -2900,7 +2900,7 @@ GameObject:
   - component: {fileID: 1375404092}
   - component: {fileID: 1375404091}
   - component: {fileID: 1375404090}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: TestCube (3)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2941,7 +2941,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 10, y: 10, z: 10}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1375404091
 MeshRenderer:
@@ -3413,9 +3413,10 @@ MonoBehaviour:
   mapMaterial: {fileID: 2100000, guid: a842c01d26c42cf4982d1f1f8c347462, type: 2}
   mapQuadTransform: {fileID: 1614829933}
   magnification_method: 0
-  cameraMagnifierScripts:
-  - {fileID: 1179192533}
-  - {fileID: 396612798}
+  cameraOffset: {fileID: 922883904}
+  rightControllerTransform: {fileID: 1037194327}
+  cameraMagnifierScripts: {fileID: 0}
+  checkpointPrefab: {fileID: 7480793744008103804, guid: 8e24efbe6da337748a082723110aaa75, type: 3}
 --- !u!1 &1633069905
 GameObject:
   m_ObjectHideFlags: 0
@@ -3474,7 +3475,7 @@ GameObject:
   - component: {fileID: 1678892146}
   - component: {fileID: 1678892145}
   - component: {fileID: 1678892144}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: TestCube (6)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3515,7 +3516,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 10, y: 10, z: 10}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1678892145
 MeshRenderer:
@@ -3684,7 +3685,7 @@ GameObject:
   - component: {fileID: 1925614956}
   - component: {fileID: 1925614955}
   - component: {fileID: 1925614954}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: TestCube (8)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3725,7 +3726,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 10, y: 10, z: 10}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1925614955
 MeshRenderer:
