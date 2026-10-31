@@ -1,50 +1,93 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using System.IO;
-using Unity.VisualScripting;
+
+public struct VisualSearchTrial
+{
+    public string mapImageName;
+    public string targetCubeColor;
+    public string zoomMethod;        //"Full", "Selective", or "Image"
+    public bool checkpointsEnabled;  //true or false
+}
 
 public class enter_info : MonoBehaviour
 {
-    private bool showing_ipd = true;
+    public GameObject mapParent;
+    private image_movement imgMoveScript;
+    private float trialTimer = 0f;
+    public float TRIAL_DURATION = 120f;
+    private bool isTimerRunning = false;
+    private bool waitingForTriggerToAdvance = false;
+    private bool experimentComplete = false;
+    private float blockBreakCooldownTimer = 0f;
+    private const float COOLDOWN_DURATION = 2.0f;
+    private bool isCooldownActive = false;
 
+    private bool showing_ipd = true;
     private int ipd_val = 63;
     private bool grabbing_ipd = false;
+
+    private int study_mode = 1; //0 = Demo, 1 = Experiment
+    private bool grabbing_mode = false;
 
     private int subj_num = 1;
     private bool grabbing_subj = false;
 
     private bool pulled = false;
-
-    private string[] file_data;
-    public float zoom_level = 1;
-    public int zoom_mode = 1;
-    public float distance;
-    private int row = 0;
-
-    private string[] file_out;
+    private List<string> file_out = new List<string>();
     private int out_row = 0;
 
-    private bool taking_likert = false;
-    private int likert_val = 3;
-    private int likert_index = 4; //previously 0
+    private List<VisualSearchTrial> experimentalTrials = new List<VisualSearchTrial>();
+    private int currentTrialIndex = 0;
+    private bool isPracticePhase = true;
 
-    private float likert_z_level;
-    private float likert_z_mode;
-
-    public bool blind_reaching; //if wanting to perform the blind reaching task, set to true
-    public bool left_hand; //if user is using the left controller, set to true
-    
-    // Start is called before the first frame update
     void Start()
     {
         transform.GetChild(0).GetComponent<TMP_Text>().text = "Before Starting, please ensure the device IPD is set to 60.<br>Pull the trigger on the right controller to continue.";
+        if (mapParent != null)
+        {
+            mapParent.SetActive(false);
+            imgMoveScript = mapParent.GetComponent<image_movement>();
+        }
     }
 
-    // Update is called once per frame // LOOK TO TAKE THE QUESTIONNAIRE OUT OF VR, AND ALSO ADD zoom_controller VALUE CALIBRATION HERE
     void Update()
     {
+        if (experimentComplete) return;
+        if (isCooldownActive)
+        {
+            blockBreakCooldownTimer -= Time.deltaTime;
+            if (blockBreakCooldownTimer <= 0f)
+            {
+                isCooldownActive = false;
+                UpdateIntermissionTextWithNextColor();
+            }
+        }
+        if (waitingForTriggerToAdvance)
+        {
+            if (isCooldownActive) return;
+
+            if ((Input.GetAxisRaw("LeftTrigger") > 0.9f || Input.GetAxisRaw("XRI_Right_Trigger") > 0.9f) && !pulled || Input.GetKeyDown(KeyCode.Return))
+            {
+                pulled = true;
+                waitingForTriggerToAdvance = false;
+                if (currentTrialIndex == 0 && (mapParent == null || !mapParent.activeSelf))
+                {
+                    LoadTrialData(currentTrialIndex);
+                }
+                else
+                {
+                    AdvanceToNextTrial();
+                }
+            }
+            else if (TriggerReleased()) pulled = false;
+
+            return;
+        }
+
         if (grabbing_ipd)
         {
             ipd_val += get_inp();
@@ -53,12 +96,41 @@ public class enter_info : MonoBehaviour
             {
                 pulled = true;
                 grabbing_ipd = false;
-                transform.GetChild(0).GetComponent<TMP_Text>().text = "Enter Subject Number.<br>Press the trigger on the right controller to continue.";
-                transform.GetChild(1).GetComponent<TMP_Text>().text = subj_num.ToString();
+                transform.GetChild(0).GetComponent<TMP_Text>().text = "Select Mode.<br>0 = Demo, 1 = Actual Experiment.<br>Press the trigger to continue.";
+                transform.GetChild(1).GetComponent<TMP_Text>().text = study_mode.ToString();
                 GameObject.Find("Zoom Controller").GetComponent<zoom_controller>().set_ipd(ipd_val);
-                grabbing_subj = true;
+                grabbing_mode = true;
             }
-            else if ((Input.GetAxisRaw("LeftTrigger") == 0f && left_hand == true) || (Input.GetAxisRaw("XRI_Right_Trigger") == 0f && left_hand == false)) pulled = false;
+            else if (TriggerReleased()) pulled = false;
+        }
+        else if (grabbing_mode)
+        {
+            study_mode += get_inp();
+            if (study_mode > 1) study_mode = 1;
+            else if (study_mode < 0) study_mode = 0;
+
+            transform.GetChild(1).GetComponent<TMP_Text>().text = study_mode.ToString();
+
+            if ((Input.GetAxisRaw("LeftTrigger") > 0.9f || Input.GetAxisRaw("XRI_Right_Trigger") > 0.9f) && !pulled || Input.GetKeyDown(KeyCode.Return))
+            {
+                pulled = true;
+                grabbing_mode = false;
+
+                if (study_mode == 0)
+                {
+                    subj_num = 0;
+                    InitializeTrialStructure();
+                    transform.GetChild(1).GetComponent<TMP_Text>().enabled = false;
+                    StartIntermissionPeriod();
+                }
+                else
+                {
+                    transform.GetChild(0).GetComponent<TMP_Text>().text = "Enter Subject Number.<br>Press the trigger on the right controller to continue.";
+                    transform.GetChild(1).GetComponent<TMP_Text>().text = subj_num.ToString();
+                    grabbing_subj = true;
+                }
+            }
+            else if (TriggerReleased()) pulled = false;
         }
         else if (grabbing_subj)
         {
@@ -68,90 +140,36 @@ public class enter_info : MonoBehaviour
             {
                 pulled = true;
                 grabbing_subj = false;
-                read_inp();
-                transform.GetChild(1).GetComponent<TMP_Text>().enabled = false; //new, hides the likert value
-                //transform.GetChild(0).GetComponent<TMP_Text>().text = "From 1 to 5, how tired are your eyes?<br>1 being not tired at all and 5 being extremely tired";
-                transform.GetChild(0).GetComponent<TMP_Text>().text = "Press the trigger to continue to the next<br>block of experiment trials";
 
-                taking_likert = true;
+                InitializeTrialStructure();
+                transform.GetChild(1).GetComponent<TMP_Text>().enabled = false;
+                StartIntermissionPeriod();
             }
-            else if ((Input.GetAxisRaw("LeftTrigger") == 0f && left_hand == true) || (Input.GetAxisRaw("XRI_Right_Trigger") == 0f && left_hand == false)) pulled = false;
+            else if (TriggerReleased()) pulled = false;
         }
-        else if (showing_ipd && ((Input.GetAxisRaw("LeftTrigger") > 0.9f || Input.GetAxisRaw("XRI_Right_Trigger") > 0.9f))/* || Input.GetKeyDown(KeyCode.Return)*/)
+        else if (showing_ipd && ((Input.GetAxisRaw("LeftTrigger") > 0.9f || Input.GetAxisRaw("XRI_Right_Trigger") > 0.9f)))
         {
             pulled = true;
             showing_ipd = false;
             grabbing_ipd = true;
-            transform.GetChild(0).GetComponent<TMP_Text>().text = "Enter IPD Number, if you aren't sure what this is then please ask the experimentor.<br>Press the trigger on the right controller to continue.";
+            transform.GetChild(0).GetComponent<TMP_Text>().text = "Enter IPD Number.<br>Press the trigger to continue.";
             transform.GetChild(1).GetComponent<TMP_Text>().text = ipd_val.ToString();
         }
-        else if (taking_likert)
+
+        if (isTimerRunning)
         {
-            likert_val += get_inp();
-
-            if (likert_val > 5) likert_val = 5;
-            else if (likert_val < 1) likert_val = 1;
-
-            transform.GetChild(1).GetComponent<TMP_Text>().text = likert_val.ToString();
-
-            if ((Input.GetAxisRaw("LeftTrigger") > 0.9f || Input.GetAxisRaw("XRI_Right_Trigger") > 0.9f) && !pulled/* || Input.GetKeyDown(KeyCode.Return)*/)
+            trialTimer += Time.deltaTime;
+            if (trialTimer >= TRIAL_DURATION)
             {
-                pulled = true;
-                continue_likert();
+                OnTrialTimeExpired();
             }
-            else if ((Input.GetAxisRaw("LeftTrigger") == 0f && left_hand == true) || (Input.GetAxisRaw("XRI_Right_Trigger") == 0f && left_hand == false)) pulled = false;
-        }
-
-        if (Input.GetKeyDown(KeyCode.A)) //MAY NOT BE NEEDED
-        {
-
-        }
-        if (Input.GetKeyDown(KeyCode.D))
-        {
-
         }
     }
 
-    private void continue_likert()
-    {
-        save_likert(likert_index + 1, likert_val);
-        switch (likert_index)
-        {
-            case 0:
-                transform.GetChild(0).GetComponent<TMP_Text>().text = "From 1 to 5, how blurry are your eyes?<br>1 being not blurry at all and 5 being extremely blurry";
-                break;
-            case 1:
-                transform.GetChild(0).GetComponent<TMP_Text>().text = "From 1 to 5, how tired and sore are your neck and back?<br>1 being not tired or sore at all and 5 being extremely tired and sore";
-                break;
-            case 2:
-                transform.GetChild(0).GetComponent<TMP_Text>().text = "From 1 to 5, how do your eyes feel (strain on your eyes)?<br>1 being not strained at all and 5 being extremely strained";
-                break;
-            case 3:
-                //transform.GetChild(0).GetComponent<TMP_Text>().text = "From 1 to 5, how does your head feel (headache)?<br>1 being no headache at all and 5 being a very bad headache";
-                transform.GetChild(0).GetComponent<TMP_Text>().text = "Block completed. Press the trigger to continue to the next block of trials";
-                break;
-            case 4:
-                //if (blind_reaching == true) GameObject.Find("Py").SetActive(false); //makes the arrow invisible if it is the blind reaching task //NOT NEEDED
-                GameObject.Find("Py").GetComponent<control_depth>().reset_marker();
-                likert_index = 3; //previously -1
-                if (row > file_data.Length - 1) end();
-                else start();
-                break;
-        }
-        likert_index++;
-    }
 
-    private void start()
+    private bool TriggerReleased()
     {
-        taking_likert = false;
-        transform.GetChild(0).GetComponent<MeshRenderer>().enabled = false;
-        transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;
-        GameObject.Find("Zoom Controller").GetComponent<zoom_controller>().set_ready();
-        //GameObject.Find("Py").transform.GetChild(0).gameObject.SetActive(true);
-        GameObject.Find("Py").transform.GetChild(0).gameObject.SetActive(!blind_reaching); //sets visibility of marker depending if it is the blind reaching task
-        GameObject.Find("Py2").transform.GetChild(0).gameObject.SetActive(true);
-        GameObject.Find("Py").GetComponent<control_depth>().moving = true;
-        if (row < 2) GameObject.Find("Py2").GetComponent<randomize_dist>().randomize();
+        return Input.GetAxisRaw("LeftTrigger") == 0f && Input.GetAxisRaw("XRI_Right_Trigger") == 0f;
     }
 
     int get_inp()
@@ -163,119 +181,255 @@ public class enter_info : MonoBehaviour
         return 0;
     }
 
-
-    //public void save_match(float dist) ORIGINAL
-    public void save_match(float dist, float controller_dist, float given_controller_dist)
+    public void InitializeTrialStructure()
     {
-        Debug.Log("Curr save = " + distance + "   " + dist);
-        string z_method = ",";
-        if (zoom_mode == 1) z_method = "high_res,";
-        else if (zoom_mode == 2) z_method = "low_res,";
-        int z_level = 0;
-        if (zoom_level == 2.5f) z_level = 2;
-        else if (zoom_level == 4) z_level = 4;
-        int row_num = row - 1;
-        float shift_out = GameObject.Find("Zoom Controller").GetComponent<zoom_controller>().current_shift;
-        string data_type;
-        if (blind_reaching == true) data_type = "blind reaching";
-        else data_type = "matching";
-
-        //file_out[out_row] = subj_num + "," + row_num + ",matching,-1," + z_method + z_level + "," + distance + "," + dist; ORIGINAL
-        //file_out[out_row] = subj_num + "," + row_num + "," + data_type + ",-1," + z_method + z_level + "," + distance + "," + dist + "," + controller_dist + "," + given_controller_dist + "," + shift_out; SECOND VERSION
-        file_out[out_row] = subj_num + "," + row_num + "," + data_type + ",-1," + z_method + z_level + "," + distance + "," + dist + "," + ipd_val;
-        out_row++;
-    }
-
-    public void save_likert(int question, int like)
-    {
-        string z_method = ",";
-        if (likert_z_mode == 1) z_method = "high_res,";
-        else if (likert_z_mode == 2) z_method = "low_res,";
-        int row_num = row - 1;
-        if (row_num > 0) row_num -= 1;
-        int z_level = 0;
-        if (likert_z_level == 2.5f) z_level = 2;
-        else if (likert_z_level == 4) z_level = 4;
-        if (row_num == 0)
+        experimentalTrials.Clear();
+        currentTrialIndex = 0;
+        if (study_mode == 0)
         {
-            z_level = -1;
-            z_method = "-1,";
-        }
-        //file_out[out_row] = subj_num + "," + row_num + ",likert," + question + "," + z_method + z_level + ",-1," + like; ORIGINAL
-        //REMOVED SINCE LIKERT IS NO LONGER TAKEN IN VR    //file_out[out_row] = subj_num + "," + row_num + ",likert," + question + "," + z_method + z_level + ",-1," + like + "," + "none" + "," + "none";
-        //REMOVED SINCE LIKERT IS NO LONGER TAKEN IN VR   //out_row++;
-    }
-
-    private void start_likert()
-    {
-        likert_z_level = zoom_level;
-        likert_z_mode = zoom_mode;
-        GameObject.Find("Py").GetComponent<control_depth>().moving = false;
-        GameObject.Find("Py").transform.GetChild(0).gameObject.SetActive(false);
-        GameObject.Find("Py2").transform.GetChild(0).gameObject.SetActive(false);
-        taking_likert = true;
-        transform.GetChild(0).GetComponent<MeshRenderer>().enabled = true;
-        //REMOVED SO LIKERT VALUE DOESN'T APPEAR   //transform.GetChild(1).GetComponent<MeshRenderer>().enabled = true;
-        GameObject.Find("Zoom Controller").GetComponent<zoom_controller>().override_zoom();
-    }
-
-    public void next_inp()
-    {
-        Debug.Log("Row: " + row);
-        if (row > file_data.Length - 1)
-        {
-            start_likert();
+            isPracticePhase = true;
+            BuildPracticeQueue();
         }
         else
         {
-            string[] line = file_data[row].Split(',');
-            int new_zoom_mode = -1;
-            if (line[3] == "low res") new_zoom_mode = 2;
-            else new_zoom_mode = 1;
-            float new_zoom_level = float.Parse(line[4]);
+            isPracticePhase = true;
+            BuildPracticeQueue();
+            LoadCounterbalancedFile();
+        }
+        file_out.Clear();
+        file_out.Add("Subject,TrialNum,Phase,MapImage,TargetColor,ZoomMethod,CheckpointsEnabled,ClickIndex,CubeName,TimeOffset_Seconds,CubeMaterial,ClickAccuracy");
+    }
 
-            if ((new_zoom_level != zoom_level || new_zoom_mode != zoom_mode) && row > 1) start_likert();
+    private void BuildPracticeQueue()
+    {
+        string[] colors = { "Blue", "Red", "Yellow", "Green", "Blue", "Red" };
+        string[] methods = { "Full", "Selective", "Image", "Full", "Selective", "Image" };
+        bool[] checkpoints = { true, false, true, false, true, false };
 
-            zoom_level = new_zoom_level;
-            zoom_mode = new_zoom_mode;
-
-            distance = float.Parse(line[5]) / 100f;
-            row++;
+        for (int i = 0; i < 6; i++)
+        {
+            VisualSearchTrial trial;
+            trial.mapImageName = $"Practice_Map_{i + 1}";
+            trial.targetCubeColor = colors[i];
+            trial.zoomMethod = methods[i];
+            trial.checkpointsEnabled = checkpoints[i];
+            experimentalTrials.Add(trial);
         }
     }
 
-    void end()
+    private void LoadCounterbalancedFile()
     {
-        taking_likert = false;
-        transform.GetChild(1).GetComponent<MeshRenderer>().enabled = false;
-        transform.GetChild(0).GetComponent<MeshRenderer>().enabled = true;
-        transform.GetChild(0).GetComponent<TMP_Text>().text = "Experiment Complete!";
-        GameObject.Find("Py").transform.GetChild(0).gameObject.SetActive(false);
-        GameObject.Find("Py").GetComponent<control_depth>().moving = false;
-        GameObject.Find("Py2").transform.GetChild(0).gameObject.SetActive(false);
-        zoom_level = 1;
-        GameObject.Find("Zoom Controller").GetComponent<zoom_controller>().set_zoom();
+        string path = Application.streamingAssetsPath + "/subj" + subj_num + "_input.csv";
+        if (!File.Exists(path))
+        {
+            Debug.LogError($"[File Missing] Cannot find subject config file at: {path}");
+            return;
+        }
 
-        string path = "data/s" + subj_num + "_data.csv";
-        File.WriteAllLines(path, file_out);
+        string[] lines = File.ReadAllLines(path);
+        int assignedSetIndex = (subj_num - 1) % 6;
+
+        for (int i = 1; i < lines.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(lines[i])) continue;
+            string[] columns = lines[i].Split(',');
+            if (columns.Length < 5)
+            {
+                Debug.LogWarning($"[CSV Format Error] Line {i + 1} has fewer than 5 columns! Skipping row.");
+                continue;
+            }
+
+            VisualSearchTrial trial;
+            trial.mapImageName = $"Set_{assignedSetIndex}_Map_{i}";
+            trial.targetCubeColor = columns[2].Trim();
+            trial.zoomMethod = columns[3].Trim();
+            string checkpointString = columns[4].Trim();
+
+            if (checkpointString.Equals("true", StringComparison.OrdinalIgnoreCase) || checkpointString == "1")
+            {
+                trial.checkpointsEnabled = true;
+            }
+            else
+            {
+                trial.checkpointsEnabled = false;
+            }
+            experimentalTrials.Add(trial);
+        }
     }
 
-    public void read_inp()
+    public void AdvanceToNextTrial()
     {
-        //string path = Application.persistentDataPath + "/inputFiles/subj" + subj_num + "_input.csv";
-        string path;
-        //if (blind_reaching == true) path = Application.streamingAssetsPath + "/subj" + subj_num.ToString() + "_input_blind_reaching.csv";
-        path = Application.streamingAssetsPath + "/subj" + subj_num.ToString() + "_input.csv";
-            Debug.LogWarning(path);
-        file_data = File.ReadAllLines(path);
+        isTimerRunning = false;
+        trialTimer = 0f;
+        waitingForTriggerToAdvance = false;
+        if (mapParent != null)
+        {
+            image_movement imgMove = mapParent.GetComponent<image_movement>();
+            if (imgMove != null)
+            {
+                imgMove.magnification_method = 0f;
+                imgMove.mapQuadTransform.localScale = new Vector3(15f, 15f, 15f);
+                imgMove.ResetInternalCheckpointMemory();
+                imgMove.Invoke("UpdateMagnificationState", 0.01f);
+            }
+            GameObject zoomCtrlObj = GameObject.Find("Zoom Controller");
+            if (zoomCtrlObj != null)
+            {
+                zoom_controller zoomCtrl = zoomCtrlObj.GetComponent<zoom_controller>();
+                if (zoomCtrl != null)
+                {
+                    zoomCtrl.zoomLevel = 1f;
+                    zoomCtrl.Invoke("set_zoom", 0.01f);
+                }
+            }
+            for (int i = mapParent.transform.childCount - 1; i >= 0; i--)
+            {
+                Transform child = mapParent.transform.GetChild(i);
+                if (child.name.Contains("Checkpoint"))
+                {
+                    Destroy(child.gameObject);
+                }
+            }
+        }
+        if (isPracticePhase && currentTrialIndex >= 6)
+        {
+            if (study_mode == 0) { end(); return; }
+            isPracticePhase = false;
+        }
+        if (currentTrialIndex >= experimentalTrials.Count)
+        {
+            end();
+            return;
+        }
+        LoadTrialData(currentTrialIndex);
+    }
 
-        file_out = new string[file_data.Length + 1 + 7 * 5];
-        //file_out[out_row] = "Subject,TrialNum,DataType,Question,ZoomType,ZoomLevel,VirtualObjDepth,Value"; ORIGINAL
-        //file_out[out_row] = "Subject,TrialNum,DataType,Question,ZoomType,ZoomLevel,VirtualObjDepth,Value,ControllerDist,GivenDist,ShiftOut"; SECOND VERSION
-        file_out[out_row] = "Subject,TrialNum,DataType,Question,ZoomType,ZoomLevel,VirtualObjDepth,PerceivedDistance,IPD";
+    private void LoadTrialData(int index)
+    {
+        if (index >= experimentalTrials.Count)
+        {
+            end();
+            return;
+        }
+        if (mapParent != null) mapParent.SetActive(true);
+        if (imgMoveScript == null && mapParent != null)
+        {
+            imgMoveScript = mapParent.GetComponent<image_movement>();
+        }
 
-        out_row++;
+        VisualSearchTrial currentTrial = experimentalTrials[index];
+        int displayedTrialNum = index + 1;
+        int totalExpected = study_mode == 0 ? 6 : 12;
+        string phaseLabel = isPracticePhase ? "PRACTICE" : "REAL";
 
-        row = 1;
+        transform.GetChild(0).GetComponent<TMP_Text>().text = $"{phaseLabel} TRIAL {displayedTrialNum}/{totalExpected}<br>Find all the <color={currentTrial.targetCubeColor.ToLower()}>{currentTrial.targetCubeColor}</color> cubes!<br>Pull trigger when ready.";
+        if (imgMoveScript != null)
+        {
+            if (currentTrial.zoomMethod == "Full") imgMoveScript.magnification_method = 0f;
+            else if (currentTrial.zoomMethod == "Selective") imgMoveScript.magnification_method = 1f;
+            else if (currentTrial.zoomMethod == "Image") imgMoveScript.magnification_method = 2f;
+            imgMoveScript.Invoke("UpdateMagnificationState", 0.01f);
+        }
+        Texture2D loadedMap = Resources.Load<Texture2D>($"MapImages/{currentTrial.mapImageName}");
+        if (loadedMap != null)
+        {
+            mapParent.GetComponent<Renderer>().material.mainTexture = loadedMap;
+        }
+        else
+        {
+            Debug.LogWarning($"[Asset Missing] Could not find texture resource at Assets/Resources/MapImages/{currentTrial.mapImageName}");
+        }
+        foreach (Transform childCubeGroup in mapParent.transform)
+        {
+            childCubeGroup.gameObject.SetActive(childCubeGroup.name == currentTrial.mapImageName);
+        }
+        trialTimer = 0f;
+        isTimerRunning = true;
+    }
+
+    private void StartIntermissionPeriod()
+    {
+        isTimerRunning = false;
+        trialTimer = 0f;
+        blockBreakCooldownTimer = COOLDOWN_DURATION;
+        isCooldownActive = true;
+        waitingForTriggerToAdvance = true;
+
+        if (mapParent != null) mapParent.SetActive(false);
+        transform.GetChild(0).GetComponent<TMP_Text>().text = "Please wait... preparing next block.";
+    }
+
+    private void UpdateIntermissionTextWithNextColor()
+    {
+        VisualSearchTrial nextTrial = GetActiveTrialConfig();
+        if (currentTrialIndex < experimentalTrials.Count)
+        {
+            nextTrial = experimentalTrials[currentTrialIndex];
+            string contextMessage = (currentTrialIndex == 0) ? "Setup Complete." : "Time is up!";
+            transform.GetChild(0).GetComponent<TMP_Text>().text =
+                $"{contextMessage}<br>Next Target: <color={nextTrial.targetCubeColor.ToLower()}>{nextTrial.targetCubeColor}</color>.<br>Press the trigger to begin.";
+        }
+    }
+
+    private void OnTrialTimeExpired()
+    {
+        isTimerRunning = false;
+        trialTimer = 0f;
+
+        if (mapParent != null)
+        {
+            image_movement imgMove = mapParent.GetComponent<image_movement>();
+            if (imgMove != null && imgMove.cameraMagnifierScripts != null)
+            {
+                imgMove.cameraMagnifierScripts.enabled = false;
+            }
+            Shader.SetGlobalFloat("_ZoomFactor", 1f);
+            Shader.SetGlobalFloat("_LensRadius", 0f);
+
+            for (int i = mapParent.transform.childCount - 1; i >= 0; i--)
+            {
+                Transform child = mapParent.transform.GetChild(i);
+                if (child.name.Contains("Checkpoint")) Destroy(child.gameObject);
+            }
+            mapParent.SetActive(false);
+        }
+        currentTrialIndex++;
+        if (currentTrialIndex >= experimentalTrials.Count)
+        {
+            end();
+            return;
+        }
+        StartIntermissionPeriod();
+    }
+
+    public float GetRelativeTrialTime()
+    {
+        return trialTimer;
+    }
+    public VisualSearchTrial GetActiveTrialConfig()
+    {
+        if (currentTrialIndex < experimentalTrials.Count) return experimentalTrials[currentTrialIndex];
+        return default(VisualSearchTrial);
+    }
+    public void LogIndividualClick(string cubeName, string timeStamp, string materialName, string accuracyLabel)
+    {
+        VisualSearchTrial currentTrial = GetActiveTrialConfig();
+        string phaseLabel = isPracticePhase ? "PRACTICE" : "REAL";
+        int clickIndex = file_out.Count;
+        string rowEntry = $"{subj_num},{currentTrialIndex + 1},{phaseLabel},{currentTrial.mapImageName},{currentTrial.targetCubeColor},{currentTrial.zoomMethod},{currentTrial.checkpointsEnabled},{clickIndex},{cubeName},{timeStamp},{materialName},{accuracyLabel}";
+        file_out.Add(rowEntry);
+        Debug.Log($"[DATALOG REGISTERED] Added row: {rowEntry}");
+    }
+    void end()
+    {
+        isTimerRunning = false;
+        waitingForTriggerToAdvance = false;
+        experimentComplete = true;
+        if (mapParent != null) mapParent.SetActive(false);
+        transform.GetChild(0).GetComponent<TMP_Text>().text = "Experiment Complete!";
+        if (transform.childCount > 1) transform.GetChild(1).gameObject.SetActive(false);
+        string path = "data/s" + subj_num + "_summary.csv";
+        File.WriteAllLines(path, file_out.ToArray());
+        Debug.Log("Experiment completed successfully. Target file written out to: " + path);
     }
 }

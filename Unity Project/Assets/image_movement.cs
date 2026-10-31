@@ -23,6 +23,7 @@ public class image_movement : MonoBehaviour
     public float magnification_method = 0f; //0 = full-view, 1 = selective, 2 = image
     public GameObject cameraOffset;
     public Transform rightControllerTransform;
+    private bool triggerPressedLastFrame = false;
 
 
     [Header("VR Fullscreen Setup")]
@@ -43,16 +44,18 @@ public class image_movement : MonoBehaviour
     void Start()
     {
         cameraOffset = GameObject.Find("Camera Offset");
+
+        Shader.SetGlobalFloat("_ZoomFactor", 1f);
+        Shader.SetGlobalFloat("_LensRadius", 0f);
+        if (cameraMagnifierScripts != null) cameraMagnifierScripts.enabled = false;
         UpdateMagnificationState();
     }
 
     void UpdateMagnificationState()
     {
         if (cameraMagnifierScripts == null) return;
-
         bool isSelectiveMode = (magnification_method >= 0.9f && magnification_method <= 1.1f);
         cameraMagnifierScripts.enabled = isSelectiveMode;
-
         if (isSelectiveMode)
         {
             currentZoomFactor = 2f;
@@ -60,11 +63,28 @@ public class image_movement : MonoBehaviour
             Shader.SetGlobalFloat("_LensRadius", 0.3f);
             Debug.Log("Global GPU Sync: Selective Zoom Mode Baseline set to 2x.");
         }
+        else
+        {
+            Shader.SetGlobalFloat("_ZoomFactor", 1f);
+            Shader.SetGlobalFloat("_LensRadius", 0f);
+        }
     }
 
 
     void Update()
     {
+        GameObject menuObj = GameObject.Find("Menu");
+        if (menuObj != null)
+        {
+            enter_info setupScript = menuObj.GetComponent<enter_info>();
+            if (setupScript != null)
+            {
+                if (setupScript.mapParent != null && !setupScript.mapParent.activeInHierarchy)
+                {
+                    return;
+                }
+            }
+        }
         if (magnification_method >= 1.9f && magnification_method <= 2.1f)
         {
             if (mapQuadTransform.localScale == new Vector3(15, 15, 15)) move_speed = 1.0f;
@@ -88,10 +108,14 @@ public class image_movement : MonoBehaviour
         {
             if (magnification_method == 0f) //Full
             {
-                if (GameObject.Find("Menu").GetComponent<enter_info>().zoom_level == 1f) GameObject.Find("Menu").GetComponent<enter_info>().zoom_level = 2.5f;
-                else if (GameObject.Find("Menu").GetComponent<enter_info>().zoom_level == 2.5f) GameObject.Find("Menu").GetComponent<enter_info>().zoom_level = 4f;
-                GameObject.Find("Zoom Controller").GetComponent<zoom_controller>().set_zoom();
-                GameObject.Find("Zoom Controller").GetComponent<zoom_controller>().set_ready();
+                zoom_controller zoomCtrl = GameObject.Find("Zoom Controller").GetComponent<zoom_controller>();
+                if (zoomCtrl != null)
+                {
+                    if (zoomCtrl.zoomLevel == 1f) zoomCtrl.zoomLevel = 2.5f;
+                    else if (zoomCtrl.zoomLevel == 2.5f) zoomCtrl.zoomLevel = 4f;
+
+                    zoomCtrl.set_ready();
+                }
             }
             else if (magnification_method == 1f) //Selective
             {
@@ -102,7 +126,6 @@ public class image_movement : MonoBehaviour
             }
             else //Image
             {
-                GameObject.Find("Menu").GetComponent<enter_info>().zoom_level = 1f;
                 if (mapQuadTransform.localScale == new Vector3(15, 15, 15)) mapQuadTransform.localScale = new Vector3(30, 30, 30);
                 else if (mapQuadTransform.localScale == new Vector3(30, 30, 30)) mapQuadTransform.localScale = new Vector3(60, 60, 60);
             }
@@ -112,10 +135,13 @@ public class image_movement : MonoBehaviour
         {
             if (magnification_method == 0f) //Full
             {
-                if (GameObject.Find("Menu").GetComponent<enter_info>().zoom_level == 4f) GameObject.Find("Menu").GetComponent<enter_info>().zoom_level = 2.5f;
-                else if (GameObject.Find("Menu").GetComponent<enter_info>().zoom_level == 2.5f) GameObject.Find("Menu").GetComponent<enter_info>().zoom_level = 1f;
-                GameObject.Find("Zoom Controller").GetComponent<zoom_controller>().set_zoom();
-                GameObject.Find("Zoom Controller").GetComponent<zoom_controller>().set_ready();
+                zoom_controller zoomCtrl = GameObject.Find("Zoom Controller").GetComponent<zoom_controller>();
+                if (zoomCtrl != null)
+                {
+                    if (zoomCtrl.zoomLevel == 4f) zoomCtrl.zoomLevel = 2.5f;
+                    else if (zoomCtrl.zoomLevel == 2.5f) zoomCtrl.zoomLevel = 1f;
+                    zoomCtrl.set_ready();
+                }
             }
             else if (magnification_method == 1f) //Selective
             {
@@ -126,7 +152,6 @@ public class image_movement : MonoBehaviour
             }
             else //Image
             {
-                GameObject.Find("Menu").GetComponent<enter_info>().zoom_level = 1f;
                 if (mapQuadTransform.localScale == new Vector3(60, 60, 60)) mapQuadTransform.localScale = new Vector3(30, 30, 30);
                 else if (mapQuadTransform.localScale == new Vector3(30, 30, 30)) mapQuadTransform.localScale = new Vector3(15, 15, 15);
             }
@@ -141,7 +166,11 @@ public class image_movement : MonoBehaviour
             UpdateMagnificationState();
         }
 
-        if (Input.GetButtonDown("XRI_Right_Trigger") || Input.GetKeyDown(KeyCode.Space))
+        float rightTriggerValue = Input.GetAxisRaw("XRI_Right_Trigger");
+        bool triggerPulledThisFrame = rightTriggerValue > 0.9f;
+        bool triggerClicked = triggerPulledThisFrame && !triggerPressedLastFrame;
+        triggerPressedLastFrame = triggerPulledThisFrame;
+        if (triggerClicked || Input.GetKeyDown(KeyCode.Space))
         {
             SelectCubeWithRaycast();
         }
@@ -159,11 +188,11 @@ public class image_movement : MonoBehaviour
         float right_y = Input.GetAxisRaw("Right Vertical");
         float right_x = Input.GetAxisRaw("Right Horizontal");
 
-        if (GameObject.Find("Menu").GetComponent<enter_info>().left_hand == true)
-        {
-            transform.localPosition = new Vector3(transform.localPosition.x - Time.deltaTime * move_speed * left_x, transform.localPosition.y - Time.deltaTime * move_speed * left_y, transform.localPosition.z);
-        }
-        else
+        //if (GameObject.Find("Menu").GetComponent<enter_info>().left_hand == true) //this is for if left_hand controller is implemented
+        //{
+        //    transform.localPosition = new Vector3(transform.localPosition.x - Time.deltaTime * move_speed * left_x, transform.localPosition.y - Time.deltaTime * move_speed * left_y, transform.localPosition.z);
+        //}
+        //else
         {
             transform.localPosition = new Vector3(transform.localPosition.x - Time.deltaTime * move_speed * right_x, transform.localPosition.y - Time.deltaTime * move_speed * right_y, transform.localPosition.z);
         }
@@ -197,9 +226,13 @@ public class image_movement : MonoBehaviour
         MapCheckpoint cp = new MapCheckpoint();
         cp.imageLocalPosition = transform.localPosition;
         cp.magnificationMethod = magnification_method;
-        cp.fullZoomLevel = GameObject.Find("Menu").GetComponent<enter_info>().zoom_level;
+
+        var trialConfig = GameObject.Find("Menu").GetComponent<enter_info>().GetActiveTrialConfig();
+        cp.fullZoomLevel = (trialConfig.zoomMethod == "Full") ? 2.5f : 4f;
+
         cp.selectiveZoomFactor = currentZoomFactor;
         cp.imageLocalScale = mapQuadTransform.localScale;
+
 
         if (checkpointPrefab != null) //Place checkpoint at headset position
         {
@@ -231,9 +264,12 @@ public class image_movement : MonoBehaviour
 
         if (magnification_method == 0f)
         {
-            GameObject.Find("Menu").GetComponent<enter_info>().zoom_level = cp.fullZoomLevel;
-            GameObject.Find("Zoom Controller").GetComponent<zoom_controller>().set_zoom();
-            GameObject.Find("Zoom Controller").GetComponent<zoom_controller>().set_ready();
+            zoom_controller zoomCtrl = GameObject.Find("Zoom Controller").GetComponent<zoom_controller>();
+            if (zoomCtrl != null)
+            {
+                zoomCtrl.set_zoom();
+                zoomCtrl.set_ready();
+            }
         }
         else if (magnification_method == 1f)
         {
@@ -247,6 +283,7 @@ public class image_movement : MonoBehaviour
         }
         Debug.Log("Loaded Checkpoint slot index: " + currentCheckpointIndex);
     }
+
 
     void UpdateIndicatorNumbers()
     {
@@ -267,6 +304,14 @@ public class image_movement : MonoBehaviour
             }
         }
     }
+    public void ResetInternalCheckpointMemory()
+    {
+        checkpoints.Clear();
+        currentCheckpointIndex = -1;
+        cubeSelectionCounts.Clear();
+        selectionHistoryLog.Clear();
+        selectionMaterialHistoryLog.Clear();
+    }
     void SelectCubeWithRaycast()
     {
         if (rightControllerTransform == null)
@@ -274,83 +319,68 @@ public class image_movement : MonoBehaviour
             GameObject foundObj = GameObject.Find("Right Controller") ?? GameObject.Find("RightHand Controller") ?? GameObject.Find("Right Hand");
             if (foundObj != null) rightControllerTransform = foundObj.transform;
         }
-
-        if (rightControllerTransform == null)
-        {
-            Debug.LogError("[Selection Error] Trigger pressed, but rightControllerTransform is missing!");
-            return;
-        }
-
+        if (rightControllerTransform == null) return;
         Vector3 rayOrigin = rightControllerTransform.position;
         Vector3 rayDirection = rightControllerTransform.forward;
         var rayInteractor = rightControllerTransform.GetComponent<UnityEngine.XR.Interaction.Toolkit.XRRayInteractor>();
-        if (rayInteractor == null)
-        {
-            rayInteractor = rightControllerTransform.GetComponentInChildren<UnityEngine.XR.Interaction.Toolkit.XRRayInteractor>();
-        }
-
         if (rayInteractor != null)
         {
             rayOrigin = rayInteractor.rayOriginTransform.position;
             rayDirection = rayInteractor.rayOriginTransform.forward;
         }
-        else
-        {
-            Debug.LogWarning("[Selection Trace] XRRayInteractor component not found on the assigned Transform or its children. Falling back to transform.forward.");
-        }
-
         Ray ray = new Ray(rayOrigin, rayDirection);
         RaycastHit hit;
-
         int cubeLayerIndex = LayerMask.NameToLayer("SearchCube");
-        if (cubeLayerIndex == -1)
-        {
-            Debug.LogError("[Selection Error] The layer 'SearchCube' does not exist in your Project Settings!");
-            return;
-        }
-
+        if (cubeLayerIndex == -1) return;
         int layerMask = 1 << cubeLayerIndex;
-        Debug.DrawRay(ray.origin, ray.direction * 200f, Color.yellow, 2.0f);
 
         if (Physics.Raycast(ray, out hit, 200f, layerMask))
         {
             if (hit.transform.IsChildOf(transform))
             {
                 string targetCubeName = hit.transform.name;
-
                 string materialName = "UnknownMaterial";
                 Renderer cubeRenderer = hit.transform.GetComponent<Renderer>();
                 if (cubeRenderer != null && cubeRenderer.material != null)
                 {
                     materialName = cubeRenderer.material.name.Replace(" (Instance)", "");
                 }
-
-                selectionHistoryLog.Add(targetCubeName);
-                selectionMaterialHistoryLog.Add(materialName);
-
-                if (cubeSelectionCounts.ContainsKey(targetCubeName))
+                float elapsedTrialTime = 0f;
+                string relativeTimestamp = "0.00";
+                GameObject menuObj = GameObject.Find("Menu");
+                if (menuObj != null)
                 {
-                    cubeSelectionCounts[targetCubeName]++;
-                }
-                else
-                {
-                    cubeSelectionCounts[targetCubeName] = 1;
-                }
+                    enter_info menuScript = menuObj.GetComponent<enter_info>();
+                    if (menuScript != null)
+                    {
+                        elapsedTrialTime = menuScript.GetRelativeTrialTime();
+                        var currentTrial = menuScript.GetActiveTrialConfig();
+                        relativeTimestamp = elapsedTrialTime.ToString("F2");
 
-                Debug.Log($"SUCCESS! Selected Target: {targetCubeName} [{materialName}]. Total Clicks: {cubeSelectionCounts[targetCubeName]}");
+                        bool isCorrect = materialName.IndexOf(currentTrial.targetCubeColor, System.StringComparison.OrdinalIgnoreCase) >= 0;
+                        string accuracyLabel = isCorrect ? "CORRECT" : "INCORRECT";
+
+                        menuScript.LogIndividualClick(targetCubeName, relativeTimestamp, materialName, accuracyLabel);
+                    }
+                }
+                selectionHistoryLog.Add($"{targetCubeName},{elapsedTrialTime.ToString("F2")},{materialName}");
+                if (cubeSelectionCounts.ContainsKey(targetCubeName)) cubeSelectionCounts[targetCubeName]++;
+                else cubeSelectionCounts[targetCubeName] = 1;
+                var actionController = rightControllerTransform.GetComponent<UnityEngine.XR.Interaction.Toolkit.XRBaseController>() ??                                       rightControllerTransform.GetComponentInParent<UnityEngine.XR.Interaction.Toolkit.XRBaseController>();
+                if (actionController != null)
+                {
+                    actionController.SendHapticImpulse(0.5f, 0.1f);
+                }
             }
-            else
-            {
-                Debug.LogWarning($"[Selection Trace] Hit object '{hit.transform.name}', but it is not a child of the map image script parent!");
-            }
-        }
-        else
-        {
-            Debug.Log("[Selection Trace] Trigger pressed, but the physics ray didn't intersect with any object on the 'SearchCube' layer.");
         }
     }
-    void SaveSelectionDataToFile()
+    public List<string> GetRawSelectionLogs()
     {
+        return selectionHistoryLog;
+    }
+
+    void SaveSelectionDataToFile()
+   {
         string projectRoot = Path.GetDirectoryName(Application.dataPath);
         string directoryPath = Path.Combine(projectRoot, "data");
         if (!Directory.Exists(directoryPath))
@@ -362,12 +392,11 @@ public class image_movement : MonoBehaviour
 
         using (StreamWriter writer = new StreamWriter(fullPath))
         {
-            writer.WriteLine("Click Index,Cube Identifier Name,Material Name");
+            writer.WriteLine("Click Index,Cube Identifier Name,Elapsed Trial Time (s),Material Name");
             for (int i = 0; i < selectionHistoryLog.Count; i++)
             {
                 writer.WriteLine($"{i + 1},{selectionHistoryLog[i]},{selectionMaterialHistoryLog[i]}");
             }
-
             writer.WriteLine("\n");
             writer.WriteLine("Cube Identifier Name,Total Selection Occurrences,Repeat Counts");
             foreach (var kvp in cubeSelectionCounts)
@@ -377,6 +406,10 @@ public class image_movement : MonoBehaviour
             }
         }
         Debug.Log($"Visual search log file successfully compiled and saved directly to your Unity Project: {fullPath}");
+    }
+    public int GetTotalSelectionClicks()
+    {
+        return selectionHistoryLog.Count;
     }
     void OnApplicationQuit()
     {

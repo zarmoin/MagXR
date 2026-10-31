@@ -53,6 +53,7 @@ public class zoom_controller : MonoBehaviour
     public GameObject cameraOffset;
     public GameObject image;
     public LayerMask imageLayer = 1;
+    public image_movement mapImageMovement;
     public float centerShift2_5 = 11.4f;
     public float cornerShift2_5 = 20.0f;
     public float centerShift4 = 22.8f;
@@ -70,7 +71,7 @@ public class zoom_controller : MonoBehaviour
 
     [Range(1f, 5f)]
     [SerializeField]
-    private float zoomLevel = 1f;
+    public float zoomLevel = 1f;
     private float currentZoomLevel = 1f;
 
     [SerializeField]
@@ -88,17 +89,10 @@ public class zoom_controller : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        /*Debug.Log("Left Horizontal: " + Input.GetAxisRaw("Left Horizontal"));
-        Debug.Log("Left Vertical: " + Input.GetAxisRaw("Left Vertical"));
-        Debug.Log("Trigger Axis: " + Input.GetAxisRaw("Trigger Axis"));
-        Debug.Log("Right Horizontal: " + Input.GetAxisRaw("Right Horizontal"));
-        Debug.Log("Right Vertical: " + Input.GetAxisRaw("Right Vertical"));
-        Debug.Log("A: " + Input.GetButtonDown("A"));
-        Debug.Log("B: " + Input.GetButtonDown("B"));
-        Debug.Log("X: " + Input.GetButtonDown("X"));
-        Debug.Log("Y: " + Input.GetButtonDown("Y"));*/
-        //float right_y = Input.GetAxisRaw("Right Vertical");
-        float distance = GameObject.Find("Menu").GetComponent<enter_info>().distance;
+        enter_info menuScript = GameObject.Find("Menu").GetComponent<enter_info>();
+        var activeTrial = menuScript.GetActiveTrialConfig();
+        float distance = 0.40f;
+
         if (currentZoomMethod == 1f && currentZoomLevel == 2.5f && distance == 0.40f) optical_2_5 = Xoptical_2_5_40;
         if (currentZoomMethod == 1f && currentZoomLevel == 2.5f && distance == 0.50f) optical_2_5 = Xoptical_2_5_50;
         if (currentZoomMethod == 1f && currentZoomLevel == 2.5f && distance == 0.60f) optical_2_5 = Xoptical_2_5_60;
@@ -114,15 +108,6 @@ public class zoom_controller : MonoBehaviour
         if (currentZoomMethod == 2f && currentZoomLevel == 4f && distance == 0.40f) digital_4 = Xdigital_4_40;
         if (currentZoomMethod == 2f && currentZoomLevel == 4f && distance == 0.50f) digital_4 = Xdigital_4_50;
         if (currentZoomMethod == 2f && currentZoomLevel == 4f && distance == 0.60f) digital_4 = Xdigital_4_60;
-
-        //Debug.Log(distance);
-
-
-
-
-
-
-
 
         if (Input.GetKeyDown(KeyCode.A))
         {
@@ -152,7 +137,6 @@ public class zoom_controller : MonoBehaviour
                 if (distance == 0.40f) Xdigital_2_5_40 = digital_2_5;
                 if (distance == 0.50f) Xdigital_2_5_50 = digital_2_5;
                 if (distance == 0.60f) Xdigital_2_5_60 = digital_2_5;
-
             }
             if (currentZoomMethod == 2f && currentZoomLevel == 4f)
             {
@@ -175,7 +159,6 @@ public class zoom_controller : MonoBehaviour
                 if (distance == 0.40f) Xoptical_2_5_40 = optical_2_5;
                 if (distance == 0.50f) Xoptical_2_5_50 = optical_2_5;
                 if (distance == 0.60f) Xoptical_2_5_60 = optical_2_5;
-
             }
             if (currentZoomMethod == 1f && currentZoomLevel == 4f)
             {
@@ -194,7 +177,6 @@ public class zoom_controller : MonoBehaviour
                 if (distance == 0.40f) Xdigital_2_5_40 = digital_2_5;
                 if (distance == 0.50f) Xdigital_2_5_50 = digital_2_5;
                 if (distance == 0.60f) Xdigital_2_5_60 = digital_2_5;
-
             }
             if (currentZoomMethod == 2f && currentZoomLevel == 4f)
             {
@@ -208,27 +190,12 @@ public class zoom_controller : MonoBehaviour
             reset_eye_pos();
         }
 
-
         if (ready)
         {
-            /*if (right_y != 0f)
-            {
-                zoomLevel += right_y * zoomSpeed * Time.deltaTime;
-                if (zoomLevel < 1f) zoomLevel = 1f;
-                else if (zoomLevel > 5f) zoomLevel = 5f;
-            }*/
-
-           /* if (Input.GetButtonDown("A"))
-            {
-                if (zoomMethod == 1) zoomMethod = 2;
-                else zoomMethod = 1;
-            }*/
-
             if (zoomMethod != currentZoomMethod || zoomLevel != currentZoomLevel)
             {
                 set_perfect(1f);
                 set_low_res(1f);
-                //set_one_eye(1f);
 
                 if (zoomMethod == 1)
                 {
@@ -249,12 +216,12 @@ public class zoom_controller : MonoBehaviour
             reset_eye_pos();
         }
 
-        if (GameObject.Find("Menu").GetComponent<enter_info>().zoom_level == 2.5f)
+        if (activeTrial.zoomMethod == "Full")
         {
             currentCenterShift = centerShift2_5;
             currentCornerShift = cornerShift2_5;
         }
-        else if (GameObject.Find("Menu").GetComponent<enter_info>().zoom_level == 4f)
+        else
         {
             currentCenterShift = centerShift4;
             currentCornerShift = cornerShift4;
@@ -262,7 +229,8 @@ public class zoom_controller : MonoBehaviour
 
         Ray ray = new Ray(cameraOffset.transform.position, cameraOffset.transform.forward);
         RaycastHit hit;
-        if (GameObject.Find("Map Image").GetComponent<image_movement>().magnification_method == 0f)
+
+        if (mapImageMovement != null && mapImageMovement.magnification_method == 0f)
         {
             if (Physics.Raycast(ray, out hit, Mathf.Infinity, imageLayer))
             {
@@ -273,40 +241,33 @@ public class zoom_controller : MonoBehaviour
                     float t = Mathf.Clamp01(distanceFromCenter / maxDistanceToCorner);
                     float activeShift = Mathf.Lerp(currentCenterShift, currentCornerShift, t);
 
-                    if (GameObject.Find("Menu").GetComponent<enter_info>().zoom_level == 2.5f)
+                    if (currentZoomLevel == 2.5f)
                     {
                         Xoptical_2_5_40 = activeShift;
                     }
-                    else if (GameObject.Find("Menu").GetComponent<enter_info>().zoom_level == 4f)
+                    else if (currentZoomLevel == 4f)
                     {
                         Xoptical_4_40 = activeShift;
                     }
                     reset_eye_pos();
                 }
             }
+
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
     }
+
 
     public void set_zoom()
     {
-        zoomMethod = GameObject.Find("Menu").GetComponent<enter_info>().zoom_mode;
-        Debug.Log("Moving zoom mode to " + zoomMethod);
-        zoomLevel = GameObject.Find("Menu").GetComponent<enter_info>().zoom_level;
-        Debug.Log("Moving zoom mode to " + zoomMethod + "x");
+        var activeTrial = GameObject.Find("Menu").GetComponent<enter_info>().GetActiveTrialConfig();
+
+        zoomMethod = (activeTrial.zoomMethod == "Full") ? 1 : 2;
+
+        //zoomLevel = 2.5f; 
+
+        Debug.Log("Zoom controller method synchronized to option: " + zoomMethod);
     }
+
 
     private float find_shift_2()  //CHANGE THESE VALUES IF NEEDED, SEEMS TO BE CAUSING DOUBLE VISION
     {

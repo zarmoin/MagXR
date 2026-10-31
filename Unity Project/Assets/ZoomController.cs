@@ -29,14 +29,23 @@ public class ZoomController : MonoBehaviour
         zoomMat.SetFloat("_ZoomLevel", zoomLevel);
         if (right_eye) zoomMat.SetFloat("_eyeR", 1f);
         else zoomMat.SetFloat("_eyeR", 0f);
+        GameObject menuObj = GameObject.Find("Menu");
+        if (menuObj != null)
+        {
+            var activeTrial = menuObj.GetComponent<enter_info>().GetActiveTrialConfig();
+            if (activeTrial.zoomMethod == "Full") pivotY = 0.5f;
+            else pivotY = 0.55f;
+        }
+        else
+        {
+            pivotY = 0.5f;
+        }
 
-        if (GameObject.Find("Menu").GetComponent<enter_info>().zoom_mode == 1) pivotY = 0.5f; //NEW
-        else pivotY = 0.55f; //NEW
-        zoomMat.SetFloat("_PivotY", pivotY); //NEW TO ACCOUNT FOR UPWARDS SHIFT
-
+        zoomMat.SetFloat("_PivotY", pivotY);
         zoomMat.SetFloat("_shift", shift_i);
         Graphics.Blit(src, dst, zoomMat);
     }
+
 
 
 
