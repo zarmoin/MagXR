@@ -156,7 +156,7 @@ public class enter_info : MonoBehaviour
             transform.GetChild(1).GetComponent<TMP_Text>().text = ipd_val.ToString();
         }
 
-        if (isTimerRunning)
+        if (isTimerRunning && study_mode == 1)
         {
             trialTimer += Time.deltaTime;
             if (trialTimer >= TRIAL_DURATION)
@@ -367,7 +367,7 @@ public class enter_info : MonoBehaviour
             nextTrial = experimentalTrials[currentTrialIndex];
             string contextMessage = (currentTrialIndex == 0) ? "Setup Complete." : "Time is up!";
             transform.GetChild(0).GetComponent<TMP_Text>().text =
-                $"{contextMessage}<br>Next Target: <color={nextTrial.targetCubeColor.ToLower()}>{nextTrial.targetCubeColor}</color>.<br>Press the trigger to begin.";
+                $"{contextMessage}<br>Next Target: <color={nextTrial.targetCubeColor.ToLower()}>{nextTrial.targetCubeColor}</color>.<br> {nextTrial.zoomMethod} Zoom <br> Press the trigger to begin.";
         }
     }
 
