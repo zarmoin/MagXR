@@ -164,6 +164,13 @@ public class enter_info : MonoBehaviour
                 OnTrialTimeExpired();
             }
         }
+
+        if (Input.GetKeyDown(KeyCode.K))
+        {
+            string path = "data/s" + subj_num + "_summary.csv";
+            File.WriteAllLines(path, file_out.ToArray());
+            Debug.Log("Data exported early");
+        }
     }
 
 

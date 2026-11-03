@@ -1,0 +1,16 @@
+Subject,TrialNum,Phase,MapImage,TargetColor,ZoomMethod,CheckpointsEnabled,ClickIndex,CubeName,TimeOffset_Seconds,CubeMaterial,ClickAccuracy
+0,1,PRACTICE,Practice_Map_1,Blue,Full,True,1,TestCube (6),0.00,Blue,CORRECT
+0,1,PRACTICE,Practice_Map_1,Blue,Full,True,2,TestCube (2),0.00,Blue,CORRECT
+0,1,PRACTICE,Practice_Map_1,Blue,Full,True,3,TestCube (2),0.00,Blue,CORRECT
+0,1,PRACTICE,Practice_Map_1,Blue,Full,True,4,TestCube (11),0.00,Red,INCORRECT
+0,1,PRACTICE,Practice_Map_1,Blue,Full,True,5,TestCube (12),0.00,Red,INCORRECT
+0,1,PRACTICE,Practice_Map_1,Blue,Full,True,6,TestCube (19),0.00,Red,INCORRECT
+0,1,PRACTICE,Practice_Map_1,Blue,Full,True,7,TestCube (12),0.00,Red,INCORRECT
+0,1,PRACTICE,Practice_Map_1,Blue,Full,True,8,TestCube (19),0.00,Red,INCORRECT
+0,1,PRACTICE,Practice_Map_1,Blue,Full,True,9,TestCube (11),0.00,Red,INCORRECT
+0,1,PRACTICE,Practice_Map_1,Blue,Full,True,10,TestCube,0.00,Red,INCORRECT
+0,1,PRACTICE,Practice_Map_1,Blue,Full,True,11,TestCube,0.00,Red,INCORRECT
+0,1,PRACTICE,Practice_Map_1,Blue,Full,True,12,TestCube (7),0.00,Green,INCORRECT
+0,1,PRACTICE,Practice_Map_1,Blue,Full,True,13,TestCube (14),0.00,Green,INCORRECT
+0,1,PRACTICE,Practice_Map_1,Blue,Full,True,14,TestCube (1),0.00,Green,INCORRECT
+0,1,PRACTICE,Practice_Map_1,Blue,Full,True,15,TestCube (1),0.00,Green,INCORRECT
