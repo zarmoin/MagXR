@@ -51,11 +51,13 @@ public class image_movement : MonoBehaviour
         UpdateMagnificationState();
     }
 
-    void UpdateMagnificationState()
+    public void UpdateMagnificationState()
     {
-        if (cameraMagnifierScripts == null) return;
         bool isSelectiveMode = (magnification_method >= 0.9f && magnification_method <= 1.1f);
-        cameraMagnifierScripts.enabled = isSelectiveMode;
+        if (cameraMagnifierScripts != null)
+        {
+            cameraMagnifierScripts.enabled = isSelectiveMode;
+        }
         if (isSelectiveMode)
         {
             currentZoomFactor = 2f;
@@ -65,45 +67,47 @@ public class image_movement : MonoBehaviour
         }
         else
         {
+            GameObject.Find("Zoom Controller").GetComponent<zoom_controller>().zoomLevel = 1f;
+            currentZoomFactor = 1f;
             Shader.SetGlobalFloat("_ZoomFactor", 1f);
             Shader.SetGlobalFloat("_LensRadius", 0f);
+            Debug.Log("Global GPU Sync: Magnification cleared.");
         }
+        if (magnification_method >= -0.1f && magnification_method <= 0.1f)
+        {
+            if (mapQuadTransform != null)
+            {
+                mapQuadTransform.localScale = new Vector3(15f, 15f, 15f);
+                Debug.Log("Image Zoom Scale safely reset to 15x baseline.");
+            }
+        }
+        Debug.Log("THING");
     }
 
 
     void Update()
     {
+        bool checkpointsAllowed = true;
         GameObject menuObj = GameObject.Find("Menu");
         if (menuObj != null)
         {
             enter_info setupScript = menuObj.GetComponent<enter_info>();
             if (setupScript != null)
             {
-                if (setupScript.mapParent != null && !setupScript.mapParent.activeInHierarchy)
-                {
-                    return;
-                }
+                checkpointsAllowed = setupScript.IsCheckpointAllowedOnCurrentTrial();
             }
-        }
-        if (magnification_method >= 1.9f && magnification_method <= 2.1f)
-        {
-            if (mapQuadTransform.localScale == new Vector3(15, 15, 15)) move_speed = 1.0f;
-            else if (mapQuadTransform.localScale == new Vector3(30, 30, 30)) move_speed = 2.0f;
-            else if (mapQuadTransform.localScale == new Vector3(60, 60, 60)) move_speed = 4.0f;
         }
 
         move();
 
-        if (Input.GetButtonDown("XRI_Right_Primary2DAxisClick") || Input.GetKeyDown(KeyCode.C))
+        if (checkpointsAllowed && (Input.GetButtonDown("XRI_Right_Primary2DAxisClick") || Input.GetKeyDown(KeyCode.C)))
         {
             HandleCheckpointPlacementOrRemoval();
         }
-
-        if (Input.GetButtonDown("XRI_Right_GripButton") || Input.GetKeyDown(KeyCode.V))
+        if (checkpointsAllowed && (Input.GetButtonDown("XRI_Right_GripButton") || Input.GetKeyDown(KeyCode.V)))
         {
             CycleCheckpoints();
         }
-
         if (Input.GetButtonDown("B") || Input.GetKeyDown(KeyCode.RightArrow))
         {
             if (magnification_method == 0f) //Full
@@ -126,8 +130,8 @@ public class image_movement : MonoBehaviour
             }
             else //Image
             {
-                if (mapQuadTransform.localScale == new Vector3(15, 15, 15)) mapQuadTransform.localScale = new Vector3(30, 30, 30);
-                else if (mapQuadTransform.localScale == new Vector3(30, 30, 30)) mapQuadTransform.localScale = new Vector3(60, 60, 60);
+                if (mapQuadTransform.localScale == new Vector3(15, 15, 15)) RescaleAroundHeadPosition(new Vector3(30, 30, 30));
+                else if (mapQuadTransform.localScale == new Vector3(30, 30, 30)) RescaleAroundHeadPosition(new Vector3(60, 60, 60));
             }
         }
 
@@ -152,8 +156,8 @@ public class image_movement : MonoBehaviour
             }
             else //Image
             {
-                if (mapQuadTransform.localScale == new Vector3(60, 60, 60)) mapQuadTransform.localScale = new Vector3(30, 30, 30);
-                else if (mapQuadTransform.localScale == new Vector3(30, 30, 30)) mapQuadTransform.localScale = new Vector3(15, 15, 15);
+                if (mapQuadTransform.localScale == new Vector3(60, 60, 60)) RescaleAroundHeadPosition(new Vector3(30, 30, 30));
+                else if (mapQuadTransform.localScale == new Vector3(30, 30, 30)) RescaleAroundHeadPosition(new Vector3(15, 15, 15));
             }
         }
 
@@ -187,6 +191,9 @@ public class image_movement : MonoBehaviour
         float left_x = Input.GetAxisRaw("Left Horizontal");
         float right_y = Input.GetAxisRaw("Right Vertical");
         float right_x = Input.GetAxisRaw("Right Horizontal");
+        if (mapQuadTransform.localScale == new Vector3(15, 15, 15)) move_speed = 1f;
+        else if (mapQuadTransform.localScale == new Vector3(30, 30, 30)) move_speed = 2f;
+        else move_speed = 4f;
 
         //if (GameObject.Find("Menu").GetComponent<enter_info>().left_hand == true) //this is for if left_hand controller is implemented
         //{
@@ -410,6 +417,19 @@ public class image_movement : MonoBehaviour
     public int GetTotalSelectionClicks()
     {
         return selectionHistoryLog.Count;
+    }
+    void RescaleAroundHeadPosition(Vector3 newScale)
+    {
+        if (Camera.main == null) return;
+        Vector3 anchorPoint = Camera.main.transform.position;
+        Vector3 currentOffset = transform.position - anchorPoint;
+        float scaleRatio = newScale.x / mapQuadTransform.localScale.x;
+
+        Vector3 newOffset = currentOffset * scaleRatio;
+        float targetZ = transform.position.z;
+        mapQuadTransform.localScale = newScale;
+        transform.position = anchorPoint + newOffset;
+        transform.position = new Vector3(transform.position.x, transform.position.y, targetZ);
     }
     void OnApplicationQuit()
     {

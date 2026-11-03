@@ -268,9 +268,12 @@ public class enter_info : MonoBehaviour
             if (imgMove != null)
             {
                 imgMove.magnification_method = 0f;
-                imgMove.mapQuadTransform.localScale = new Vector3(15f, 15f, 15f);
+                if (imgMove.mapQuadTransform != null)
+                {
+                    imgMove.mapQuadTransform.localScale = new Vector3(15f, 15f, 15f);
+                }
                 imgMove.ResetInternalCheckpointMemory();
-                imgMove.Invoke("UpdateMagnificationState", 0.01f);
+                imgMove.UpdateMagnificationState();
             }
             GameObject zoomCtrlObj = GameObject.Find("Zoom Controller");
             if (zoomCtrlObj != null)
@@ -279,7 +282,7 @@ public class enter_info : MonoBehaviour
                 if (zoomCtrl != null)
                 {
                     zoomCtrl.zoomLevel = 1f;
-                    zoomCtrl.Invoke("set_zoom", 0.01f);
+                    zoomCtrl.set_zoom();
                 }
             }
             for (int i = mapParent.transform.childCount - 1; i >= 0; i--)
@@ -328,7 +331,8 @@ public class enter_info : MonoBehaviour
             if (currentTrial.zoomMethod == "Full") imgMoveScript.magnification_method = 0f;
             else if (currentTrial.zoomMethod == "Selective") imgMoveScript.magnification_method = 1f;
             else if (currentTrial.zoomMethod == "Image") imgMoveScript.magnification_method = 2f;
-            imgMoveScript.Invoke("UpdateMagnificationState", 0.01f);
+
+            imgMoveScript.UpdateMagnificationState();
         }
         Texture2D loadedMap = Resources.Load<Texture2D>($"MapImages/{currentTrial.mapImageName}");
         if (loadedMap != null)
@@ -366,8 +370,13 @@ public class enter_info : MonoBehaviour
         {
             nextTrial = experimentalTrials[currentTrialIndex];
             string contextMessage = (currentTrialIndex == 0) ? "Setup Complete." : "Time is up!";
+            string checkpointStatus = nextTrial.checkpointsEnabled ? "<color=green>ENABLED</color>" : "<color=red>DISABLED</color>";
             transform.GetChild(0).GetComponent<TMP_Text>().text =
-                $"{contextMessage}<br>Next Target: <color={nextTrial.targetCubeColor.ToLower()}>{nextTrial.targetCubeColor}</color>.<br> {nextTrial.zoomMethod} Zoom <br> Press the trigger to begin.";
+                $"{contextMessage}<br>" +
+                $"Next Target: <color={nextTrial.targetCubeColor.ToLower()}>{nextTrial.targetCubeColor}</color>.<br>" +
+                $"{nextTrial.zoomMethod} Zoom<br>" +
+                $"Spatial Checkpoints: {checkpointStatus}<br><br>" +
+                "Press the trigger to begin.";
         }
     }
 
@@ -379,13 +388,16 @@ public class enter_info : MonoBehaviour
         if (mapParent != null)
         {
             image_movement imgMove = mapParent.GetComponent<image_movement>();
-            if (imgMove != null && imgMove.cameraMagnifierScripts != null)
+            if (imgMove != null)
             {
-                imgMove.cameraMagnifierScripts.enabled = false;
+                imgMove.magnification_method = 0f;
+                if (imgMove.mapQuadTransform != null)
+                {
+                    imgMove.mapQuadTransform.localScale = new Vector3(15f, 15f, 15f);
+                }
+                imgMove.ResetInternalCheckpointMemory();
+                imgMove.UpdateMagnificationState();
             }
-            Shader.SetGlobalFloat("_ZoomFactor", 1f);
-            Shader.SetGlobalFloat("_LensRadius", 0f);
-
             for (int i = mapParent.transform.childCount - 1; i >= 0; i--)
             {
                 Transform child = mapParent.transform.GetChild(i);
@@ -419,6 +431,11 @@ public class enter_info : MonoBehaviour
         string rowEntry = $"{subj_num},{currentTrialIndex + 1},{phaseLabel},{currentTrial.mapImageName},{currentTrial.targetCubeColor},{currentTrial.zoomMethod},{currentTrial.checkpointsEnabled},{clickIndex},{cubeName},{timeStamp},{materialName},{accuracyLabel}";
         file_out.Add(rowEntry);
         Debug.Log($"[DATALOG REGISTERED] Added row: {rowEntry}");
+    }
+    public bool IsCheckpointAllowedOnCurrentTrial()
+    {
+        VisualSearchTrial trial = GetActiveTrialConfig();
+        return trial.checkpointsEnabled;
     }
     void end()
     {
