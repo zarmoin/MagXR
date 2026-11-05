@@ -216,12 +216,12 @@ public class zoom_controller : MonoBehaviour
             reset_eye_pos();
         }
 
-        if (activeTrial.zoomMethod == "Full")
+        if (activeTrial.zoomMethod == "Full" && currentZoomLevel == 2.5f)
         {
             currentCenterShift = centerShift2_5;
             currentCornerShift = cornerShift2_5;
         }
-        else
+        else if (activeTrial.zoomMethod == "Full" && currentZoomLevel == 4f)
         {
             currentCenterShift = centerShift4;
             currentCornerShift = cornerShift4;
