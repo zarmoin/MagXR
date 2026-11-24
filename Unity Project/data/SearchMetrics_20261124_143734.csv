@@ -1,0 +1,38 @@
+Click Index,Map Name,Cube Identifier Name,Elapsed Trial Time (s),Material Name,Is Repeat,Occurrence Number
+1,Set_0_Map_1,TestCube (16),21.47,Yellow,False,1
+2,Set_0_Map_2,TestCube (9),51.30,Green,False,1
+3,Set_0_Map_2,TestCube (11),56.81,Green,False,1
+4,Set_0_Map_3,TestCube (13),4.87,Blue,False,1
+5,Set_0_Map_3,TestCube (2),14.97,Blue,False,1
+6,Set_0_Map_3,TestCube (14),23.11,Blue,False,1
+7,Set_0_Map_3,TestCube (13),39.00,Blue,True,2
+8,Set_0_Map_4,TestCube (4),54.66,Red,False,1
+9,Set_0_Map_4,TestCube (4),56.08,Red,True,2
+10,Set_0_Map_5,TestCube (3),31.84,Yellow,False,1
+11,Set_0_Map_6,TestCube (9),10.28,Green,False,1
+12,Set_0_Map_6,TestCube (8),23.91,Green,False,1
+13,Set_0_Map_6,TestCube (1),28.96,Green,False,1
+
+Map Name,Cube Identifier Name,Total Selection Occurrences,Repeat Counts
+Set_0_Map_1,TestCube (16),1,0
+Set_0_Map_2,TestCube (9),1,0
+Set_0_Map_2,TestCube (11),1,0
+Set_0_Map_3,TestCube (13),2,1
+Set_0_Map_3,TestCube (2),1,0
+Set_0_Map_3,TestCube (14),1,0
+Set_0_Map_4,TestCube (4),2,1
+Set_0_Map_5,TestCube (3),1,0
+Set_0_Map_6,TestCube (9),1,0
+Set_0_Map_6,TestCube (8),1,0
+Set_0_Map_6,TestCube (1),1,0
+
+Checkpoints Placed,Checkpoints Removed,Checkpoints Cycled (Loaded),Total Checkpoint Actions
+6,0,0,6
+
+Checkpoint Action Index,Map Name,Elapsed Trial Time (s),Action Type,Details
+1,Practice_Map_1,37.14,Placed,Slot:1
+2,Practice_Map_3,21.71,Placed,Slot:1
+3,Practice_Map_3,35.40,Placed,Slot:2
+4,Practice_Map_3,51.23,Placed,Slot:3
+5,Practice_Map_5,26.81,Placed,Slot:1
+6,Practice_Map_5,32.47,Placed,Slot:2

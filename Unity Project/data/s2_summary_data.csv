@@ -1,0 +1,14 @@
+Subject,TrialNum,Phase,MapImage,TargetColor,ZoomMethod,CheckpointsEnabled,ClickIndex,CubeName,TimeOffset_Seconds,CubeMaterial,ClickAccuracy
+1,7,REAL,Set_0_Map_1,Yellow,Full,True,1,TestCube (16),21.47,Yellow,CORRECT
+1,8,REAL,Set_0_Map_2,Green,Selective,False,2,TestCube (9),51.30,Green,CORRECT
+1,8,REAL,Set_0_Map_2,Green,Selective,False,3,TestCube (11),56.81,Green,CORRECT
+1,9,REAL,Set_0_Map_3,Blue,Image,True,4,TestCube (13),4.87,Blue,CORRECT
+1,9,REAL,Set_0_Map_3,Blue,Image,True,5,TestCube (2),14.97,Blue,CORRECT
+1,9,REAL,Set_0_Map_3,Blue,Image,True,6,TestCube (14),23.11,Blue,CORRECT
+1,9,REAL,Set_0_Map_3,Blue,Image,True,7,TestCube (13),39.00,Blue,CORRECT
+1,10,REAL,Set_0_Map_4,Red,Full,False,8,TestCube (4),54.66,Red,CORRECT
+1,10,REAL,Set_0_Map_4,Red,Full,False,9,TestCube (4),56.08,Red,CORRECT
+1,11,REAL,Set_0_Map_5,Yellow,Selective,True,10,TestCube (3),31.84,Yellow,CORRECT
+1,12,REAL,Set_0_Map_6,Green,Image,False,11,TestCube (9),10.28,Green,CORRECT
+1,12,REAL,Set_0_Map_6,Green,Image,False,12,TestCube (8),23.91,Green,CORRECT
+1,12,REAL,Set_0_Map_6,Green,Image,False,13,TestCube (1),28.96,Green,CORRECT

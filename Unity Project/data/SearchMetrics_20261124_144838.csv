@@ -1,0 +1,15 @@
+Click Index,Map Name,Cube Identifier Name,Elapsed Trial Time (s),Material Name,Is Repeat,Occurrence Number
+1,Practice_Map_1,TestCube (8),0.00,Red,False,1
+
+Map Name,Cube Identifier Name,Total Selection Occurrences,Repeat Counts
+Practice_Map_1,TestCube (8),1,0
+
+Checkpoints Placed,Checkpoints Removed,Checkpoints Cycled (Loaded),Total Checkpoint Actions
+2,0,3,5
+
+Checkpoint Action Index,Map Name,Elapsed Trial Time (s),Action Type,Details
+1,Practice_Map_1,0.00,Placed,Slot:1
+2,Practice_Map_1,0.00,Placed,Slot:2
+3,Practice_Map_1,0.00,CycledToSlot:1,TotalActive:2
+4,Practice_Map_1,0.00,CycledToSlot:2,TotalActive:2
+5,Practice_Map_1,0.00,CycledToSlot:1,TotalActive:2
