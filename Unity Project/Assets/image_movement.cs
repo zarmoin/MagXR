@@ -39,7 +39,12 @@ public class image_movement : MonoBehaviour
     [Header("Visual Search Data Tracking")]
     private Dictionary<string, int> cubeSelectionCounts = new Dictionary<string, int>();
     private List<string> selectionHistoryLog = new List<string>();
-    private List<string> selectionMaterialHistoryLog = new List<string>();
+
+    private int checkpointsPlacedCount = 0;
+    private int checkpointsRemovedCount = 0;
+    private int checkpointsCycledCount = 0;
+    private List<string> checkpointActionLog = new List<string>();
+
 
     void Start()
     {
@@ -206,6 +211,9 @@ public class image_movement : MonoBehaviour
     }
     void HandleCheckpointPlacementOrRemoval()
     {
+        string currentMap = GetCurrentMapName();
+        float elapsed = GetCurrentTrialTime();
+
         if (currentCheckpointIndex != -1 && checkpoints.Count > 0)
         {
             MapCheckpoint activeCP = checkpoints[currentCheckpointIndex];
@@ -217,6 +225,9 @@ public class image_movement : MonoBehaviour
                 checkpoints.RemoveAt(currentCheckpointIndex);
                 currentCheckpointIndex = -1;
                 UpdateIndicatorNumbers();
+
+                checkpointsRemovedCount++;
+                checkpointActionLog.Add($"{currentMap},{elapsed:F2},Removed,ActiveCount:{checkpoints.Count}");
                 Debug.Log("Checkpoint removed! Remaining total: " + checkpoints.Count);
                 return;
             }
@@ -224,7 +235,6 @@ public class image_movement : MonoBehaviour
 
         if (checkpoints.Count >= maxCheckpoints)
         {
-            //Destroy physical object before removing reference index
             if (checkpoints[0].visualIndicator != null) Destroy(checkpoints[0].visualIndicator);
             checkpoints.RemoveAt(0);
             if (currentCheckpointIndex > 0) currentCheckpointIndex--;
@@ -240,8 +250,7 @@ public class image_movement : MonoBehaviour
         cp.selectiveZoomFactor = currentZoomFactor;
         cp.imageLocalScale = mapQuadTransform.localScale;
 
-
-        if (checkpointPrefab != null) //Place checkpoint at headset position
+        if (checkpointPrefab != null)
         {
             Transform headCamera = Camera.main.transform;
             Vector3 spawnWorldPos = new Vector3(headCamera.position.x, headCamera.position.y, 4f);
@@ -252,6 +261,9 @@ public class image_movement : MonoBehaviour
         checkpoints.Add(cp);
         currentCheckpointIndex = checkpoints.Count - 1;
         UpdateIndicatorNumbers();
+
+        checkpointsPlacedCount++;
+        checkpointActionLog.Add($"{currentMap},{elapsed:F2},Placed,Slot:{currentCheckpointIndex + 1}");
         Debug.Log("New checkpoint placed at headset coordinates and anchored to map! Index: " + currentCheckpointIndex);
     }
 
@@ -288,8 +300,12 @@ public class image_movement : MonoBehaviour
         {
             mapQuadTransform.localScale = cp.imageLocalScale;
         }
+
+        checkpointsCycledCount++;
+        checkpointActionLog.Add($"{GetCurrentMapName()},{GetCurrentTrialTime():F2},CycledToSlot:{currentCheckpointIndex + 1},TotalActive:{checkpoints.Count}");
         Debug.Log("Loaded Checkpoint slot index: " + currentCheckpointIndex);
     }
+
 
 
     void UpdateIndicatorNumbers()
@@ -315,11 +331,8 @@ public class image_movement : MonoBehaviour
     {
         checkpoints.Clear();
         currentCheckpointIndex = -1;
-        cubeSelectionCounts.Clear();
-        selectionHistoryLog.Clear();
-        selectionMaterialHistoryLog.Clear();
     }
-    void SelectCubeWithRaycast()
+void SelectCubeWithRaycast()
     {
         if (rightControllerTransform == null)
         {
@@ -346,48 +359,86 @@ public class image_movement : MonoBehaviour
             if (hit.transform.IsChildOf(transform))
             {
                 string targetCubeName = hit.transform.name;
+                string currentMap = GetCurrentMapName();
+                string uniqueCubeKey = $"{currentMap}|{targetCubeName}";
+
                 string materialName = "UnknownMaterial";
                 Renderer cubeRenderer = hit.transform.GetComponent<Renderer>();
                 if (cubeRenderer != null && cubeRenderer.material != null)
                 {
                     materialName = cubeRenderer.material.name.Replace(" (Instance)", "");
                 }
-                float elapsedTrialTime = 0f;
-                string relativeTimestamp = "0.00";
+
+                float elapsedTrialTime = GetCurrentTrialTime();
+                string relativeTimestamp = elapsedTrialTime.ToString("F2");
+
                 GameObject menuObj = GameObject.Find("Menu");
                 if (menuObj != null)
                 {
                     enter_info menuScript = menuObj.GetComponent<enter_info>();
                     if (menuScript != null)
                     {
-                        elapsedTrialTime = menuScript.GetRelativeTrialTime();
                         var currentTrial = menuScript.GetActiveTrialConfig();
-                        relativeTimestamp = elapsedTrialTime.ToString("F2");
-
                         bool isCorrect = materialName.IndexOf(currentTrial.targetCubeColor, System.StringComparison.OrdinalIgnoreCase) >= 0;
                         string accuracyLabel = isCorrect ? "CORRECT" : "INCORRECT";
 
                         menuScript.LogIndividualClick(targetCubeName, relativeTimestamp, materialName, accuracyLabel);
                     }
                 }
-                selectionHistoryLog.Add($"{targetCubeName},{elapsedTrialTime.ToString("F2")},{materialName}");
-                if (cubeSelectionCounts.ContainsKey(targetCubeName)) cubeSelectionCounts[targetCubeName]++;
-                else cubeSelectionCounts[targetCubeName] = 1;
-                var actionController = rightControllerTransform.GetComponent<UnityEngine.XR.Interaction.Toolkit.XRBaseController>() ??                                       rightControllerTransform.GetComponentInParent<UnityEngine.XR.Interaction.Toolkit.XRBaseController>();
+
+                if (cubeSelectionCounts.ContainsKey(uniqueCubeKey)) cubeSelectionCounts[uniqueCubeKey]++;
+                else cubeSelectionCounts[uniqueCubeKey] = 1;
+
+                int occurrenceNum = cubeSelectionCounts[uniqueCubeKey];
+                bool isRepeat = occurrenceNum > 1;
+
+                selectionHistoryLog.Add($"{currentMap},{targetCubeName},{relativeTimestamp},{materialName},{isRepeat},{occurrenceNum}");
+
+                var actionController = rightControllerTransform.GetComponent<UnityEngine.XR.Interaction.Toolkit.XRBaseController>() ??
+                                       rightControllerTransform.GetComponentInParent<UnityEngine.XR.Interaction.Toolkit.XRBaseController>();
                 if (actionController != null)
                 {
                     actionController.SendHapticImpulse(0.5f, 0.1f);
                 }
             }
         }
+
     }
     public List<string> GetRawSelectionLogs()
     {
         return selectionHistoryLog;
     }
 
-    void SaveSelectionDataToFile()
-   {
+    private string GetCurrentMapName()
+    {
+        GameObject menuObj = GameObject.Find("Menu");
+        if (menuObj != null)
+        {
+            enter_info menuScript = menuObj.GetComponent<enter_info>();
+            if (menuScript != null && !string.IsNullOrEmpty(menuScript.GetActiveTrialConfig().mapImageName))
+            {
+                return menuScript.GetActiveTrialConfig().mapImageName;
+            }
+        }
+        return "UnknownMap";
+    }
+
+    private float GetCurrentTrialTime()
+    {
+        GameObject menuObj = GameObject.Find("Menu");
+        if (menuObj != null)
+        {
+            enter_info menuScript = menuObj.GetComponent<enter_info>();
+            if (menuScript != null) return menuScript.GetRelativeTrialTime();
+        }
+        return 0f;
+    }
+
+
+    public void SaveSelectionDataToFile()
+    {
+        if (selectionHistoryLog.Count == 0 && checkpointActionLog.Count == 0) return;
+
         string projectRoot = Path.GetDirectoryName(Application.dataPath);
         string directoryPath = Path.Combine(projectRoot, "data");
         if (!Directory.Exists(directoryPath))
@@ -399,21 +450,43 @@ public class image_movement : MonoBehaviour
 
         using (StreamWriter writer = new StreamWriter(fullPath))
         {
-            writer.WriteLine("Click Index,Cube Identifier Name,Elapsed Trial Time (s),Material Name");
+            // Section 1: Chronological Cube Clicks
+            writer.WriteLine("Click Index,Map Name,Cube Identifier Name,Elapsed Trial Time (s),Material Name,Is Repeat,Occurrence Number");
             for (int i = 0; i < selectionHistoryLog.Count; i++)
             {
-                writer.WriteLine($"{i + 1},{selectionHistoryLog[i]},{selectionMaterialHistoryLog[i]}");
+                writer.WriteLine($"{i + 1},{selectionHistoryLog[i]}");
             }
-            writer.WriteLine("\n");
-            writer.WriteLine("Cube Identifier Name,Total Selection Occurrences,Repeat Counts");
+
+            writer.WriteLine();
+
+            // Section 2: Cube Repeat Summary
+            writer.WriteLine("Map Name,Cube Identifier Name,Total Selection Occurrences,Repeat Counts");
             foreach (var kvp in cubeSelectionCounts)
             {
+                string[] parts = kvp.Key.Split('|');
+                string mapName = parts.Length > 0 ? parts[0] : "UnknownMap";
+                string cubeName = parts.Length > 1 ? parts[1] : kvp.Key;
                 int repeats = kvp.Value - 1;
-                writer.WriteLine($"{kvp.Key},{kvp.Value},{repeats}");
+                writer.WriteLine($"{mapName},{cubeName},{kvp.Value},{repeats}");
+            }
+
+            writer.WriteLine();
+
+            // Section 3: Checkpoint Usage Summary & Log
+            writer.WriteLine("Checkpoints Placed,Checkpoints Removed,Checkpoints Cycled (Loaded),Total Checkpoint Actions");
+            int totalCheckpointActions = checkpointsPlacedCount + checkpointsRemovedCount + checkpointsCycledCount;
+            writer.WriteLine($"{checkpointsPlacedCount},{checkpointsRemovedCount},{checkpointsCycledCount},{totalCheckpointActions}");
+
+            writer.WriteLine();
+            writer.WriteLine("Checkpoint Action Index,Map Name,Elapsed Trial Time (s),Action Type,Details");
+            for (int i = 0; i < checkpointActionLog.Count; i++)
+            {
+                writer.WriteLine($"{i + 1},{checkpointActionLog[i]}");
             }
         }
         Debug.Log($"Visual search log file successfully compiled and saved directly to your Unity Project: {fullPath}");
     }
+
     public int GetTotalSelectionClicks()
     {
         return selectionHistoryLog.Count;

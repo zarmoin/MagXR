@@ -167,9 +167,14 @@ public class enter_info : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.K))
         {
-            string path = "data/s" + subj_num + "_summary.csv";
-            File.WriteAllLines(path, file_out.ToArray());
-            Debug.Log("Data exported early");
+             string path = "data/s" + subj_num + "_summary.csv";
+             File.WriteAllLines(path, file_out.ToArray());
+
+             if (imgMoveScript != null)
+             {
+                 imgMoveScript.SaveSelectionDataToFile();
+             }
+             Debug.Log("Data exported early (Summary + SearchMetrics)");
         }
     }
 

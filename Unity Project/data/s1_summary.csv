@@ -1,13 +1,14 @@
 Subject,TrialNum,Phase,MapImage,TargetColor,ZoomMethod,CheckpointsEnabled,ClickIndex,CubeName,TimeOffset_Seconds,CubeMaterial,ClickAccuracy
-1,1,PRACTICE,Practice_Map_1,Blue,Full,True,1,TestCube (9),1.25,Yellow,INCORRECT
-1,2,PRACTICE,Practice_Map_2,Red,Selective,False,2,TestCube (4),0.67,Yellow,INCORRECT
-1,2,PRACTICE,Practice_Map_2,Red,Selective,False,3,TestCube (7),1.97,Green,INCORRECT
-1,9,REAL,Set_0_Map_3,Blue,Image,True,4,TestCube (15),1.22,Yellow,INCORRECT
-1,9,REAL,Set_0_Map_3,Blue,Image,True,5,TestCube (13),1.80,Blue,CORRECT
-1,9,REAL,Set_0_Map_3,Blue,Image,True,6,TestCube (13),1.97,Blue,CORRECT
-1,11,REAL,Set_0_Map_5,Yellow,Selective,True,7,TestCube (4),1.12,Yellow,CORRECT
-1,11,REAL,Set_0_Map_5,Yellow,Selective,True,8,TestCube (4),1.31,Yellow,CORRECT
-1,12,REAL,Set_0_Map_6,Green,Image,False,9,TestCube,1.17,Red,INCORRECT
-1,12,REAL,Set_0_Map_6,Green,Image,False,10,TestCube,1.35,Red,INCORRECT
-1,12,REAL,Set_0_Map_6,Green,Image,False,11,TestCube,1.53,Red,INCORRECT
-1,12,REAL,Set_0_Map_6,Green,Image,False,12,TestCube (4),1.96,Yellow,INCORRECT
+1,1,PRACTICE,Practice_Map_1,Blue,Full,True,1,TestCube (16),18.42,Blue,CORRECT
+1,1,PRACTICE,Practice_Map_1,Blue,Full,True,2,TestCube (16),46.96,Blue,CORRECT
+1,1,PRACTICE,Practice_Map_1,Blue,Full,True,3,TestCube (15),59.10,Blue,CORRECT
+1,2,PRACTICE,Practice_Map_2,Red,Selective,False,4,TestCube,6.35,Red,CORRECT
+1,2,PRACTICE,Practice_Map_2,Red,Selective,False,5,TestCube (12),11.57,Blue,INCORRECT
+1,2,PRACTICE,Practice_Map_2,Red,Selective,False,6,TestCube (5),17.60,Red,CORRECT
+1,2,PRACTICE,Practice_Map_2,Red,Selective,False,7,TestCube (4),19.50,Red,CORRECT
+1,2,PRACTICE,Practice_Map_2,Red,Selective,False,8,TestCube,28.80,Red,CORRECT
+1,2,PRACTICE,Practice_Map_2,Red,Selective,False,9,TestCube,59.69,Red,CORRECT
+1,3,PRACTICE,Practice_Map_3,Yellow,Image,True,10,TestCube (18),3.47,Yellow,CORRECT
+1,3,PRACTICE,Practice_Map_3,Yellow,Image,True,11,TestCube (3),33.82,Yellow,CORRECT
+1,3,PRACTICE,Practice_Map_3,Yellow,Image,True,12,TestCube (16),41.46,Yellow,CORRECT
+1,3,PRACTICE,Practice_Map_3,Yellow,Image,True,13,TestCube (17),45.58,Yellow,CORRECT
