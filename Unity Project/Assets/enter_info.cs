@@ -56,6 +56,22 @@ public class enter_info : MonoBehaviour
 
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.K))
+        {
+            string path = "data/s" + subj_num + "_summary.csv";
+            File.WriteAllLines(path, file_out.ToArray());
+
+            if (imgMoveScript == null && mapParent != null)
+            {
+                imgMoveScript = mapParent.GetComponent<image_movement>();
+            }
+            if (imgMoveScript != null)
+            {
+                imgMoveScript.SaveSelectionDataToFile();
+            }
+            Debug.Log("Data exported manually via K key.");
+        }
+
         if (experimentComplete) return;
         if (isCooldownActive)
         {
@@ -163,18 +179,6 @@ public class enter_info : MonoBehaviour
             {
                 OnTrialTimeExpired();
             }
-        }
-
-        if (Input.GetKeyDown(KeyCode.K))
-        {
-             string path = "data/s" + subj_num + "_summary.csv";
-             File.WriteAllLines(path, file_out.ToArray());
-
-             if (imgMoveScript != null)
-             {
-                 imgMoveScript.SaveSelectionDataToFile();
-             }
-             Debug.Log("Data exported early (Summary + SearchMetrics)");
         }
     }
 
@@ -454,6 +458,16 @@ public class enter_info : MonoBehaviour
         isTimerRunning = false;
         waitingForTriggerToAdvance = false;
         experimentComplete = true;
+
+        if (imgMoveScript == null && mapParent != null)
+        {
+            imgMoveScript = mapParent.GetComponent<image_movement>();
+        }
+        if (imgMoveScript != null)
+        {
+            imgMoveScript.SaveSelectionDataToFile();
+        }
+
         if (mapParent != null) mapParent.SetActive(false);
         transform.GetChild(0).GetComponent<TMP_Text>().text = "Experiment Complete!";
         if (transform.childCount > 1) transform.GetChild(1).gameObject.SetActive(false);
@@ -461,4 +475,5 @@ public class enter_info : MonoBehaviour
         File.WriteAllLines(path, file_out.ToArray());
         Debug.Log("Experiment completed successfully. Target file written out to: " + path);
     }
+
 }
