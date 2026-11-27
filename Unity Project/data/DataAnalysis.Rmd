@@ -1,0 +1,350 @@
+
+---
+title: "Visual Search Zoom Method & Checkpoint Analysis"
+author: "Data Analysis"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.width = 9, fig.height = 5.5)
+
+# Load required libraries (install if missing)
+packages <- c("tidyverse", "readxl", "knitr", "patchwork")
+installed <- packages %in% rownames(installed.packages())
+if (any(!installed)) install.packages(packages[!installed])
+
+library(tidyverse)
+library(readxl)
+library(knitr)
+library(patchwork)
+
+theme_set(theme_minimal(base_size = 13))
+```
+
+## 1. Data Loading & Cleaning
+
+This section loads the questionnaire Excel workbook and the three participant summary logs, reconstructing zero-selection trials and separating unique cube discoveries from repeat clicks.
+
+```{r load-data}
+# 1. Load Questionnaire Data
+q_raw <- read_excel("567 Questionnaires(1-3).xlsx")
+
+# 2. Load Performance Summary CSVs and assign true Subject IDs from filenames
+s1 <- read_csv("s1_summary_data.csv") %>% mutate(Subject = 1)
+s2 <- read_csv("s2_summary_data.csv") %>% mutate(Subject = 2)
+s3 <- read_csv("s3_summary_data.csv") %>% mutate(Subject = 3)
+
+perf_clicks <- bind_rows(s1, s2, s3) %>%
+  filter(Phase == "REAL")
+
+# Create a complete 3 Subjects x 6 REAL Trials grid so trials with 0 clicks are preserved
+trial_design <- tribble(
+  ~TrialNum, ~MapImage,    ~ZoomMethod,  ~CheckpointsEnabled,
+  7,         "Set_0_Map_1", "Full",      TRUE,
+  8,         "Set_0_Map_2", "Selective", FALSE,
+  9,         "Set_0_Map_3", "Image",     TRUE,
+  10,        "Set_0_Map_4", "Full",      FALSE,
+  11,        "Set_0_Map_5", "Selective", TRUE,
+  12,        "Set_0_Map_6", "Image",     FALSE
+)
+
+full_grid <- expand_grid(Subject = c(1, 2, 3), trial_design)
+
+# Summarize trial-level performance
+trial_perf <- perf_clicks %>%
+  group_by(Subject, TrialNum, MapImage, ZoomMethod, CheckpointsEnabled) %>%
+  summarise(
+    Total_Clicks = n(),
+    Unique_Cubes = n_distinct(CubeName),
+    Reselections = Total_Clicks - Unique_Cubes,
+    Correct_Unique = n_distinct(CubeName[ClickAccuracy == "CORRECT"]),
+    First_Click_Time = min(TimeOffset_Seconds, na.rm = TRUE),
+    Mean_Click_Time = mean(TimeOffset_Seconds, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  right_join(full_grid, by = c("Subject", "TrialNum", "MapImage", "ZoomMethod", "CheckpointsEnabled")) %>%
+  mutate(
+    Total_Clicks = replace_na(Total_Clicks, 0),
+    Unique_Cubes = replace_na(Unique_Cubes, 0),
+    Reselections = replace_na(Reselections, 0),
+    Correct_Unique = replace_na(Correct_Unique, 0),
+    Checkpoints = ifelse(CheckpointsEnabled, "With Checkpoints", "Without Checkpoints"),
+    Condition = paste(ZoomMethod, ifelse(CheckpointsEnabled, "(+CP)", "(-CP)"))
+  )
+```
+
+```{r parse-questionnaires}
+# Helper to extract numeric prefix from strings like "2 - Modest"
+extract_num <- function(x) {
+  as.numeric(str_extract(as.character(x), "^[0-9]+"))
+}
+
+# Parse Pre-Task Baseline Symptoms
+pre_symptoms <- q_raw %>%
+  transmute(
+    Subject = as.numeric(`Subject Number (ask experimenter if you do not know what this is)`),
+    Condition = "Baseline (Pre-Task)",
+    ZoomMethod = "Baseline",
+    Checkpoints = "Baseline",
+    Eye_Tiredness = extract_num(`How tired are your eyes?`),
+    Vision_Blurry = extract_num(`How blurry is your vision?`),
+    Neck_Back = extract_num(`How tired and sore are your neck and back?`),
+    Eye_Strain = extract_num(`How do your eyes feel (strain on eyes)?`),
+    Headache = extract_num(`How does your head feel (headache)?`)
+  )
+
+# Parse the 6 Post-Condition Blocks (Columns 13 to 84 in groups of 12 columns)
+post_blocks <- map_dfr(1:6, function(i) {
+  start_col <- 13 + (i - 1) * 12
+  sub_df <- q_raw[, c(7, start_col:(start_col + 11))]
+  colnames(sub_df) <- c(
+    "Subject", "RawCondition",
+    "Eye_Tiredness", "Vision_Blurry", "Neck_Back", "Eye_Strain", "Headache",
+    "Mental_Demand", "Physical_Demand", "Temporal_Demand",
+    "Performance_Failure", "Effort", "Frustration"
+  )
+  
+  sub_df %>%
+    mutate(
+      Subject = as.numeric(Subject),
+      Order = i,
+      ZoomMethod = case_when(
+        str_detect(RawCondition, regex("Full", ignore_case = TRUE)) ~ "Full",
+        str_detect(RawCondition, regex("Selective", ignore_case = TRUE)) ~ "Selective",
+        str_detect(RawCondition, regex("Image", ignore_case = TRUE)) ~ "Image"
+      ),
+      Checkpoints = ifelse(
+        str_detect(RawCondition, regex("without", ignore_case = TRUE)),
+        "Without Checkpoints", "With Checkpoints"
+      ),
+      Condition = paste(ZoomMethod, ifelse(Checkpoints == "With Checkpoints", "(+CP)", "(-CP)")),
+      across(c(Eye_Tiredness, Vision_Blurry, Neck_Back, Eye_Strain, Headache), extract_num),
+      across(c(Mental_Demand, Physical_Demand, Temporal_Demand, Performance_Failure, Effort, Frustration), as.numeric),
+      # Raw NASA-TLX composite score (0-20 scale; Performance is already coded 0=perfect, 20=failure)
+      NASA_TLX_Mean = rowMeans(across(c(Mental_Demand, Physical_Demand, Temporal_Demand, Performance_Failure, Effort, Frustration)))
+    )
+})
+
+
+# Overall Preference
+preference_df <- q_raw %>%
+  transmute(
+    Subject = as.numeric(`Subject Number (ask experimenter if you do not know what this is)`),
+    Preferred_Method = `Overall, which method did you prefer most?`
+  )
+```
+
+---
+
+## 2. Which Zoom Method Was Preferred?
+
+### Overall Method Preference
+
+```{r preference-plot}
+pref_summary <- preference_df %>%
+  count(Preferred_Method) %>%
+  mutate(Pct = n / sum(n) * 100)
+
+ggplot(pref_summary, aes(x = reorder(Preferred_Method, -n), y = n, fill = Preferred_Method)) +
+  geom_col(width = 0.55, show.legend = FALSE) +
+  geom_text(aes(label = sprintf("%d (%.0f%%)", n, Pct)), vjust = -0.5, fontface = "bold") +
+  scale_y_continuous(limits = c(0, max(pref_summary$n) + 0.8), breaks = 0:3) +
+  scale_fill_brewer(palette = "Set2") +
+  labs(
+    title = "Overall Preferred Zoom Method (N = 3)",
+    subtitle = "Post-experiment forced-choice preference",
+    x = "Zoom Method",
+    y = "Number of Participants"
+  )
+```
+
+### Perceived Workload (NASA-TLX) by Zoom Method & Checkpoints
+
+Lower scores indicate lower perceived workload (and better perceived performance, since the survey scales performance from `0 = perfect` to `20 = failure`).
+
+```{r nasatlx-plot, fig.height=6}
+tlx_summary <- post_blocks %>%
+  group_by(ZoomMethod, Checkpoints) %>%
+  summarise(
+    Mean_TLX = mean(NASA_TLX_Mean),
+    SD_TLX = sd(NASA_TLX_Mean),
+    .groups = "drop"
+  )
+
+p_tlx_overall <- ggplot(post_blocks, aes(x = ZoomMethod, y = NASA_TLX_Mean, fill = Checkpoints)) +
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(0.75), width = 0.65, alpha = 0.85) +
+  geom_point(position = position_jitterdodge(jitter.width = 0.1, dodge.width = 0.75), size = 2.5, alpha = 0.8) +
+  scale_fill_manual(values = c("With Checkpoints" = "#2b8cbe", "Without Checkpoints" = "#a6bddb")) +
+  labs(
+    title = "Overall NASA-TLX Workload by Zoom Method & Checkpoints",
+    subtitle = "Bars show group means; dots show individual participant scores (0-20 scale, lower is better)",
+    x = "Zoom Method",
+    y = "Mean NASA-TLX Score",
+    fill = "Checkpoint Mode"
+  )
+
+# Subscale breakdown
+tlx_long <- post_blocks %>%
+  pivot_longer(
+    cols = c(Mental_Demand, Physical_Demand, Temporal_Demand, Performance_Failure, Effort, Frustration),
+    names_to = "Subscale",
+    values_to = "Score"
+  ) %>%
+  mutate(Subscale = str_replace_all(Subscale, "_", " "))
+
+p_tlx_sub <- ggplot(tlx_long, aes(x = ZoomMethod, y = Score, fill = Checkpoints)) +
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(0.8), width = 0.7) +
+  facet_wrap(~Subscale, ncol = 3) +
+  scale_fill_manual(values = c("With Checkpoints" = "#2b8cbe", "Without Checkpoints" = "#a6bddb")) +
+  labs(
+    title = "NASA-TLX Subscales Across Conditions",
+    x = "Zoom Method",
+    y = "Mean Rating (0-20)",
+    fill = "Checkpoint Mode"
+  ) +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+
+p_tlx_overall / p_tlx_sub + plot_layout(heights = c(1, 1.3))
+```
+
+### Eye Tiredness & Visual Strain Progression
+
+Tracking visual symptoms from pre-task baseline across all 6 conditions in chronological order.
+
+```{r eye-strain-plot}
+symptoms_all <- bind_rows(
+  pre_symptoms %>% mutate(Order = 0),
+  post_blocks %>% select(Subject, Order, Condition, ZoomMethod, Checkpoints, Eye_Tiredness, Vision_Blurry, Neck_Back, Eye_Strain, Headache)
+) %>%
+  pivot_longer(
+    cols = c(Eye_Tiredness, Vision_Blurry, Eye_Strain),
+    names_to = "Symptom",
+    values_to = "Severity"
+  ) %>%
+  mutate(
+    Symptom = recode(Symptom,
+      "Eye_Tiredness" = "Eye Tiredness",
+      "Vision_Blurry" = "Blurred Vision",
+      "Eye_Strain" = "Eye Strain"
+    ),
+    Step_Label = factor(Order, levels = 0:6, labels = c(
+      "0: Baseline",
+      "1: Full (+CP)",
+      "2: Selective (-CP)",
+      "3: Image (+CP)",
+      "4: Full (-CP)",
+      "5: Selective (+CP)",
+      "6: Image (-CP)"
+    ))
+  )
+
+ggplot(symptoms_all, aes(x = Step_Label, y = Severity, color = Symptom, group = Symptom)) +
+  stat_summary(fun = mean, geom = "line", linewidth = 1.1) +
+  stat_summary(fun = mean, geom = "point", size = 3) +
+  scale_y_continuous(limits = c(0, 3), breaks = 0:3, labels = c("0 - None", "1 - Mild", "2 - Modest", "3 - Bad")) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(
+    title = "Ocular Fatigue & Strain Across Experiment Order",
+    subtitle = "Mean symptom rating from pre-task baseline through all 6 zoom conditions",
+    x = "Experiment Stage (Chronological Order)",
+    y = "Symptom Severity Rating",
+    color = "Symptom"
+  ) +
+  theme(axis.text.x = element_text(angle = 25, hjust = 1))
+```
+
+---
+
+## 3. Which Zoom Method Had the Best Performance?
+
+```{r}
+
+perf_summary_table <- trial_perf %>%
+  group_by(ZoomMethod, Checkpoints) %>%
+  summarise(
+    Trials = n(),
+    Mean_Unique_Cubes = round(mean(Unique_Cubes), 2),
+    SD_Unique_Cubes = round(sd(Unique_Cubes), 2),
+    Total_Reselections = sum(Reselections),
+    Mean_Reselections = round(mean(Reselections), 2),
+    Mean_First_Cube_Sec = round(mean(First_Click_Time, na.rm = TRUE), 2),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(Mean_Unique_Cubes), Mean_Reselections)
+
+kable(perf_summary_table, caption = "Visual Search Performance Summary Across Zoom Conditions")
+
+
+p_cubes <- ggplot(trial_perf, aes(x = ZoomMethod, y = Unique_Cubes, fill = Checkpoints)) +
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(0.75), width = 0.65, alpha = 0.85) +
+  geom_point(position = position_jitterdodge(jitter.width = 0.1, dodge.width = 0.75), size = 2.8) +
+  scale_y_continuous(breaks = 0:5, limits = c(0, 4.8)) +
+  scale_fill_manual(values = c("With Checkpoints" = "#1b9e77", "Without Checkpoints" = "#a6dba0")) +
+  labs(
+    title = "Unique Target Cubes Found",
+    subtitle = "Higher is better (excludes repeat clicks)",
+    x = "Zoom Method",
+    y = "Unique Cubes Found",
+    fill = "Checkpoint Mode"
+  )
+
+p_repeats <- ggplot(trial_perf, aes(x = ZoomMethod, y = Reselections, fill = Checkpoints)) +
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(0.75), width = 0.65, alpha = 0.85) +
+  geom_point(position = position_jitterdodge(jitter.width = 0.1, dodge.width = 0.75), size = 2.8) +
+  scale_y_continuous(breaks = 0:3, limits = c(0, 2.5)) +
+  scale_fill_manual(values = c("With Checkpoints" = "#d95f02", "Without Checkpoints" = "#fdb863")) +
+  labs(
+    title = "Re-selection Errors (Repeat Clicks)",
+    subtitle = "Lower is better (0 = no duplicate clicks)",
+    x = "Zoom Method",
+    y = "Mean Repeat Clicks per Trial",
+    fill = "Checkpoint Mode"
+  )
+
+p_cubes + p_repeats + plot_layout(guides = "collect") & theme(legend.position = "bottom")
+
+
+ggplot(trial_perf %>% filter(!is.na(First_Click_Time)), 
+       aes(x = ZoomMethod, y = First_Click_Time, fill = Checkpoints)) +
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(0.75), width = 0.65, alpha = 0.85) +
+  geom_point(position = position_jitterdodge(jitter.width = 0.1, dodge.width = 0.75), size = 2.8) +
+  scale_fill_manual(values = c("With Checkpoints" = "#7570b3", "Without Checkpoints" = "#bcbddc")) +
+  labs(
+    title = "Initial Search Speed: Time to First Target Cube (Seconds)",
+    subtitle = "Lower values indicate faster initial target acquisition",
+    x = "Zoom Method",
+    y = "Time to First Click (s)",
+    fill = "Checkpoint Mode"
+  )
+
+
+tradeoff_df <- trial_perf %>%
+  inner_join(post_blocks, by = c("Subject", "ZoomMethod", "Checkpoints", "Condition")) %>%
+  group_by(Condition, ZoomMethod, Checkpoints) %>%
+  summarise(
+    Mean_Cubes = mean(Unique_Cubes),
+    Mean_TLX = mean(NASA_TLX_Mean),
+    Mean_Repeats = mean(Reselections),
+    .groups = "drop"
+  )
+
+ggplot(tradeoff_df, aes(x = Mean_Cubes, y = Mean_TLX, color = ZoomMethod, shape = Checkpoints)) +
+  geom_point(size = 5) +
+  geom_text(aes(label = Condition), vjust = -1.1, size = 3.8, show.legend = FALSE) +
+  scale_x_continuous(limits = c(0.5, 3.2)) +
+  scale_y_continuous(limits = c(4, 13)) +
+  scale_color_brewer(palette = "Dark2") +
+  labs(
+    title = "Performance vs. Subjective Workload Trade-off",
+    subtitle = "Bottom-right represents optimal performance (more cubes found, lower NASA-TLX workload)",
+    x = "Mean Unique Cubes Found (Higher = Better)",
+    y = "Mean NASA-TLX Workload (Lower = Better)",
+    color = "Zoom Method",
+    shape = "Checkpoints"
+  )
